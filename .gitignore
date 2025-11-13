@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+*.log
+
+# Vite cache
+.vite/
+
+# Editor/OS
+.DS_Store
+*.swp
+
+# Service worker cache artifacts
+sw.js.map
+
+# Env
+.env*
+
