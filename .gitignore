@@ -5,16 +5,34 @@ node_modules/
 dist/
 *.log
 
+# TypeScript
+*.tsbuildinfo
+
 # Vite cache
 .vite/
 
 # Editor/OS
 .DS_Store
 *.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
 
 # Service worker cache artifacts
 sw.js.map
 
 # Env
 .env*
+.env.local
+.env.*.local
+
+# Coverage
+coverage/
+*.lcov
+
+# Temporary files
+*.tmp
+*.temp
 
