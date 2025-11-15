@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { RadarCanvas } from './components/RadarCanvas'
 import { ControlPanel } from './components/ControlPanel'
 import { useRadarState } from './state/store'
@@ -12,12 +12,32 @@ function seedAircraft(): Aircraft[] {
 export const App: React.FC = () => {
 	const init = useMemo(seedAircraft, [])
 	const state = useRadarState(init)
+	const [clearMeasureTrigger, setClearMeasureTrigger] = useState(0)
 
 	return (
 		<div className="app">
 			<div className="topbar">
 				<div>ATC Training Radar</div>
 				<div className="row">
+					<button
+						onClick={() => state.setMode('spawn')}
+						disabled={state.mode === 'spawn'}
+						aria-pressed={state.mode === 'spawn'}
+					>
+						生成・指示
+					</button>
+					<button
+						onClick={() => state.setMode('measure')}
+						disabled={state.mode === 'measure'}
+						aria-pressed={state.mode === 'measure'}
+					>
+						計測
+					</button>
+					{state.mode === 'measure' && (
+						<button onClick={() => setClearMeasureTrigger((prev) => prev + 1)}>
+							計測クリア
+						</button>
+					)}
 					<button onClick={state.resetAll}>リセット</button>
 					<button
 						onClick={() => state.setRangeNm(20)}
@@ -38,9 +58,11 @@ export const App: React.FC = () => {
 			<div className="content">
 				<RadarCanvas
 					rangeNm={state.rangeNm}
+					mode={state.mode}
 					aircraft={state.aircraft}
 					onTapAircraft={(id) => state.setSelectedId(id)}
 					onTapEmpty={(r, b) => state.spawnAircraftAt(r, b)}
+					clearMeasureTrigger={clearMeasureTrigger}
 				/>
 				<ControlPanel
 					selected={state.selected}

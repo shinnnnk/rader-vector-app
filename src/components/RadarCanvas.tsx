@@ -1,18 +1,24 @@
-import React, { useEffect, useMemo, useRef } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { computePxPerNm, polarToScreen, RangeNm, screenToPolar } from '../utils/coordinates'
 import { Aircraft } from '../models/aircraft'
+import { RadarMode } from '../state/store'
 
 export interface RadarCanvasProps {
 	rangeNm: RangeNm
+	mode: RadarMode
 	aircraft: Aircraft[]
 	onTapAircraft?: (id: string) => void
 	onTapEmpty?: (rNm: number, bearingDeg: number) => void
+	clearMeasureTrigger?: number
 }
 
-export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, aircraft, onTapAircraft, onTapEmpty }) => {
+export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraft, onTapAircraft, onTapEmpty, clearMeasureTrigger }) => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
 	const containerRef = useRef<HTMLDivElement | null>(null)
 	const dpr = useMemo(() => window.devicePixelRatio || 1, [])
+	const [measureStart, setMeasureStart] = useState<{ x: number; y: number } | null>(null)
+	const [measureCurrent, setMeasureCurrent] = useState<{ x: number; y: number } | null>(null)
+	const isDraggingRef = useRef(false)
 
 	useEffect(() => {
 		function resize() {
@@ -141,14 +147,67 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, aircraft, onT
 			const label = `${ac.callsign}\nHDG ${String(hdgDisplay).padStart(3, '0')}`
 			drawLabel(ctx, p.x, p.y, label, 12 * dpr)
 		}
+
+		// measure line
+		if (mode === 'measure' && measureStart && measureCurrent) {
+			drawMeasureLine(ctx, measureStart, measureCurrent, cx, cy, pxPerNm, dpr)
+		}
 	}
 
 	useEffect(() => {
 		draw()
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [rangeNm, aircraft])
+	}, [rangeNm, aircraft, measureStart, measureCurrent, mode])
+
+	function getCanvasPoint(ev: React.MouseEvent | React.TouchEvent): { x: number; y: number } | null {
+		const canvas = canvasRef.current
+		if (!canvas) return null
+		const rect = canvas.getBoundingClientRect()
+		let clientX: number, clientY: number
+		if ('touches' in ev && ev.touches.length > 0) {
+			clientX = ev.touches[0].clientX
+			clientY = ev.touches[0].clientY
+		} else if ('clientX' in ev) {
+			clientX = ev.clientX
+			clientY = ev.clientY
+		} else {
+			return null
+		}
+		return {
+			x: (clientX - rect.left) * dpr,
+			y: (clientY - rect.top) * dpr
+		}
+	}
+
+	function handlePointerDown(ev: React.MouseEvent | React.TouchEvent) {
+		if (mode !== 'measure') return
+		const point = getCanvasPoint(ev)
+		if (!point) return
+		setMeasureStart(point)
+		setMeasureCurrent(point)
+		isDraggingRef.current = true
+		if ('preventDefault' in ev) ev.preventDefault()
+	}
+
+	function handlePointerMove(ev: React.MouseEvent | React.TouchEvent) {
+		if (mode !== 'measure' || !isDraggingRef.current) return
+		const point = getCanvasPoint(ev)
+		if (!point) return
+		setMeasureCurrent(point)
+		if ('preventDefault' in ev) ev.preventDefault()
+	}
+
+	function handlePointerUp(ev: React.MouseEvent | React.TouchEvent) {
+		if (mode !== 'measure' || !isDraggingRef.current) return
+		isDraggingRef.current = false
+		if ('preventDefault' in ev) ev.preventDefault()
+	}
 
 	function handleClick(ev: React.MouseEvent) {
+		if (mode === 'measure') {
+			// 計測モードではクリックは無視（計測線は残す）
+			return
+		}
 		if (!onTapAircraft) return
 		const canvas = canvasRef.current
 		if (!canvas) return
@@ -178,8 +237,35 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, aircraft, onT
 		}
 	}
 
+	// モード変更時に計測をリセット
+	useEffect(() => {
+		setMeasureStart(null)
+		setMeasureCurrent(null)
+		isDraggingRef.current = false
+	}, [mode])
+
+	// clearMeasureTriggerが変更されたら計測をクリア
+	useEffect(() => {
+		if (clearMeasureTrigger !== undefined && clearMeasureTrigger > 0) {
+			setMeasureStart(null)
+			setMeasureCurrent(null)
+			isDraggingRef.current = false
+		}
+	}, [clearMeasureTrigger])
+
 	return (
-		<div ref={containerRef} className="canvas-wrap" onClick={handleClick}>
+		<div
+			ref={containerRef}
+			className="canvas-wrap"
+			onClick={handleClick}
+			onMouseDown={handlePointerDown}
+			onMouseMove={handlePointerMove}
+			onMouseUp={handlePointerUp}
+			onMouseLeave={handlePointerUp}
+			onTouchStart={handlePointerDown}
+			onTouchMove={handlePointerMove}
+			onTouchEnd={handlePointerUp}
+		>
 			<canvas ref={canvasRef} />
 		</div>
 	)
@@ -403,6 +489,68 @@ function drawRadialRectangle(
 	ctx.lineTo(d.x, d.y)
 	ctx.closePath()
 	ctx.stroke()
+	ctx.restore()
+}
+
+function drawMeasureLine(
+	ctx: CanvasRenderingContext2D,
+	start: { x: number; y: number },
+	current: { x: number; y: number },
+	cx: number,
+	cy: number,
+	pxPerNm: number,
+	dpr: number
+) {
+	// 計測線を描画
+	ctx.save()
+	ctx.strokeStyle = 'rgba(255,255,0,0.9)'
+	ctx.lineWidth = 2 * dpr
+	ctx.beginPath()
+	ctx.moveTo(start.x, start.y)
+	ctx.lineTo(current.x, current.y)
+	ctx.stroke()
+
+	// 開始点にマーカー
+	ctx.fillStyle = 'rgba(255,255,0,0.9)'
+	ctx.beginPath()
+	ctx.arc(start.x, start.y, 4 * dpr, 0, Math.PI * 2)
+	ctx.fill()
+
+	// 終了点にマーカー
+	ctx.beginPath()
+	ctx.arc(current.x, current.y, 4 * dpr, 0, Math.PI * 2)
+	ctx.fill()
+
+	// 距離と方位を計算
+	const dxPx = current.x - start.x
+	const dyPx = start.y - current.y // y軸反転
+	const dxNm = dxPx / pxPerNm
+	const dyNm = dyPx / pxPerNm
+	const distanceNm = Math.hypot(dxNm, dyNm)
+	const bearingRad = Math.atan2(dxNm, dyNm)
+	let bearingDeg = (bearingRad * 180) / Math.PI
+	if (bearingDeg < 0) bearingDeg += 360
+
+	// ラベルを表示（線の中点付近）
+	const midX = (start.x + current.x) / 2
+	const midY = (start.y + current.y) / 2
+	const distanceStr = distanceNm.toFixed(1)
+	const bearingStr = Math.round(bearingDeg).toString().padStart(3, '0')
+	const label = `${distanceStr} NM\nBRG ${bearingStr}°`
+	
+	ctx.fillStyle = 'rgba(0,0,0,0.7)'
+	ctx.fillRect(midX - 40 * dpr, midY - 20 * dpr, 80 * dpr, 40 * dpr)
+	
+	ctx.font = `${12 * dpr}px ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco`
+	ctx.fillStyle = '#ffff00'
+	ctx.textAlign = 'center'
+	ctx.textBaseline = 'middle'
+	const lines = label.split('\n')
+	lines.forEach((line, i) => {
+		ctx.fillText(line, midX, midY - (lines.length - 1 - i * 2) * 7 * dpr)
+	})
+	ctx.textAlign = 'left'
+	ctx.textBaseline = 'alphabetic'
 	ctx.restore()
 }
 

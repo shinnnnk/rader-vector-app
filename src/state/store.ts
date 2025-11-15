@@ -68,8 +68,11 @@ const CALLSIGN_PREFIXES = [
 	'TZP'
 ];
 
+export type RadarMode = 'spawn' | 'measure'
+
 export function useRadarState(initial: Aircraft[]) {
 	const [rangeNm, setRangeNm] = useState<20 | 50>(20)
+	const [mode, setMode] = useState<RadarMode>('spawn')
 	const [aircraft, setAircraft] = useState<Aircraft[]>(initial)
 	const [selectedId, setSelectedId] = useState<AircraftId | null>(null)
 	const [history, setHistory] = useState<HistoryItem[]>([])
@@ -166,6 +169,8 @@ export function useRadarState(initial: Aircraft[]) {
 	return {
 		rangeNm,
 		setRangeNm,
+		mode,
+		setMode,
 		aircraft,
 		setAircraft,
 		selectedId,
