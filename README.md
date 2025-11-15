@@ -1,4 +1,4 @@
-## ATC Training Radar (PWA)
+## ATC Training Radar
 
 開発用メモ
 
