@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/components/controlpanel.tsx","./src/components/radarcanvas.tsx","./src/models/aircraft.ts","./src/state/store.ts","./src/utils/coordinates.ts"],"version":"5.9.3"}
