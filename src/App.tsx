@@ -24,7 +24,14 @@ export const App: React.FC = () => {
 						disabled={state.mode === 'spawn'}
 						aria-pressed={state.mode === 'spawn'}
 					>
-						生成・指示
+						生成
+					</button>
+					<button
+						onClick={() => state.setMode('command')}
+						disabled={state.mode === 'command'}
+						aria-pressed={state.mode === 'command'}
+					>
+						指示
 					</button>
 					<button
 						onClick={() => state.setMode('measure')}

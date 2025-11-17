@@ -68,7 +68,7 @@ const CALLSIGN_PREFIXES = [
 	'TZP'
 ];
 
-export type RadarMode = 'spawn' | 'measure'
+export type RadarMode = 'spawn' | 'command' | 'measure'
 
 export function useRadarState(initial: Aircraft[]) {
 	const [rangeNm, setRangeNm] = useState<20 | 50>(20)

@@ -208,7 +208,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			// 計測モードではクリックは無視（計測線は残す）
 			return
 		}
-		if (!onTapAircraft) return
+		if (!onTapAircraft && !onTapEmpty) return
 		const canvas = canvasRef.current
 		if (!canvas) return
 		const rect = canvas.getBoundingClientRect()
@@ -230,8 +230,12 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 				bestId = ac.id
 			}
 		}
-		if (bestId) onTapAircraft(bestId)
-		else if (onTapEmpty) {
+		if (mode === 'command' && bestId && onTapAircraft) {
+			onTapAircraft(bestId)
+			return
+		}
+
+		if (mode === 'spawn' && !bestId && onTapEmpty) {
 			const polar = screenToPolar(cx, cy, x, y, pxPerNm)
 			onTapEmpty(polar.rNm, polar.bearingDeg)
 		}
