@@ -74,9 +74,6 @@ export const App: React.FC = () => {
 				<ControlPanel
 					selected={state.selected}
 					onHeading={(hdg) => state.selected && state.issueHeading(state.selected.id, hdg)}
-					onAltitude={(altH) =>
-						state.selected && state.issueAltitude(state.selected.id, altH)
-					}
 					history={state.history}
 				/>
 			</div>

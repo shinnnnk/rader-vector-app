@@ -108,12 +108,6 @@ export function useRadarState(initial: Aircraft[]) {
 		const disp = v === 0 ? 360 : v
 		logHistory(id, `HDG ${String(disp).padStart(3, '0')}`)
 	}
-	function issueAltitude(id: AircraftId, altitudeH: number) {
-		setAircraft((list) =>
-			list.map((a) => (a.id === id ? { ...a, pendingAltitudeH: altitudeH } : a))
-		)
-		logHistory(id, `ALT ${altitudeH}H`)
-	}
 	function logHistory(id: AircraftId, action: string) {
 		setHistory((h) => [{ timestamp: Date.now(), aircraftId: id, action }, ...h].slice(0, 200))
 	}
@@ -178,7 +172,6 @@ export function useRadarState(initial: Aircraft[]) {
 		selected,
 		history,
 		issueHeading,
-		issueAltitude,
 		resetAll,
 		spawnAircraftAt
 	}
