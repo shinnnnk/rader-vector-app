@@ -261,6 +261,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 		<div
 			ref={containerRef}
 			className="canvas-wrap"
+			style={{ touchAction: mode === 'measure' ? 'none' : 'manipulation' }}
 			onClick={handleClick}
 			onMouseDown={handlePointerDown}
 			onMouseMove={handlePointerMove}
