@@ -60,6 +60,26 @@ export const App: React.FC = () => {
 					>
 						50 NM
 					</button>
+					<div style={{ marginLeft: 16, display: 'flex', gap: 4 }}>
+						{state.speedPresets.map((speed) => {
+							const label =
+								speed === 1
+									? '1.0x'
+									: Number.isInteger(speed)
+									? `${speed.toFixed(0)}x`
+									: `${speed.toFixed(1)}x`
+							return (
+								<button
+									key={speed}
+									onClick={() => state.setSimSpeed(speed)}
+									disabled={state.simSpeed === speed}
+									aria-pressed={state.simSpeed === speed}
+								>
+									{label}
+								</button>
+							)
+						})}
+					</div>
 				</div>
 			</div>
 			<div className="content">

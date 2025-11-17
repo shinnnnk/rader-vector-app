@@ -62,6 +62,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ selected, onHeading,
 					<li>生成モード: 空域クリックで新規スポーン</li>
 					<li>指示モード: 機体クリックで選択しHDG指示</li>
 					<li>計測モード: ドラッグで距離/方位を計測</li>
+					<li>速度倍率: 0.5x / 1.0x / 2.0x / 5.0x</li>
 				</ul>
 			</div>
 		</div>

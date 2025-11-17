@@ -70,25 +70,31 @@ const CALLSIGN_PREFIXES = [
 
 export type RadarMode = 'spawn' | 'command' | 'measure'
 
+const SPEED_PRESETS = [0.5, 1, 2, 5] as const
+export type SimSpeed = (typeof SPEED_PRESETS)[number]
+
 export function useRadarState(initial: Aircraft[]) {
 	const [rangeNm, setRangeNm] = useState<20 | 50>(20)
 	const [mode, setMode] = useState<RadarMode>('spawn')
 	const [aircraft, setAircraft] = useState<Aircraft[]>(initial)
 	const [selectedId, setSelectedId] = useState<AircraftId | null>(null)
 	const [history, setHistory] = useState<HistoryItem[]>([])
+	const [simSpeed, setSimSpeed] = useState<SimSpeed>(1)
 	const timerRef = useRef<number | null>(null)
 	const initialRef = useRef<Aircraft[]>(initial)
 	const seqRef = useRef<number>(1)
 
-	// 4秒ごと更新
+	// 4秒ごと更新（速度倍率に応じて間隔を調整）
 	useEffect(() => {
+		if (timerRef.current) window.clearInterval(timerRef.current)
+		const intervalMs = (TICK_SEC * 1000) / simSpeed
 		timerRef.current = window.setInterval(() => {
 			setAircraft((list) => list.map((a) => advanceAircraft(a)))
-		}, TICK_SEC * 1000)
+		}, intervalMs)
 		return () => {
 			if (timerRef.current) window.clearInterval(timerRef.current)
 		}
-	}, [])
+	}, [simSpeed])
 
 	const selected = useMemo(
 		() => aircraft.find((a) => a.id === selectedId) ?? null,
@@ -171,6 +177,9 @@ export function useRadarState(initial: Aircraft[]) {
 		setSelectedId,
 		selected,
 		history,
+		simSpeed,
+		speedPresets: SPEED_PRESETS,
+		setSimSpeed,
 		issueHeading,
 		resetAll,
 		spawnAircraftAt
