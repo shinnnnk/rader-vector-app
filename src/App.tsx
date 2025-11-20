@@ -12,7 +12,15 @@ function seedAircraft(): Aircraft[] {
 export const App: React.FC = () => {
 	const init = useMemo(seedAircraft, [])
 	const state = useRadarState(init)
+	const [spawnHeadingInput, setSpawnHeadingInput] = useState<string>('')
 	const [clearMeasureTrigger, setClearMeasureTrigger] = useState(0)
+
+	const parsedSpawnHeading = useMemo(() => {
+		const v = Number(spawnHeadingInput)
+		if (!Number.isFinite(v)) return null
+		const normalized = ((Math.round(v) % 360) + 360) % 360
+		return normalized === 0 ? 360 : normalized
+	}, [spawnHeadingInput])
 
 	return (
 		<div className="app">
@@ -80,6 +88,19 @@ export const App: React.FC = () => {
 							)
 						})}
 					</div>
+					<div style={{ marginLeft: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+						<label style={{ fontSize: 12, opacity: 0.8 }}>生成HDG</label>
+						<input
+							inputMode="numeric"
+							placeholder="例: 270"
+							value={spawnHeadingInput}
+							onChange={(e) => setSpawnHeadingInput(e.target.value)}
+							style={{ width: 64 }}
+						/>
+						<div style={{ fontSize: 12, minWidth: 48, textAlign: 'center', opacity: 0.8 }}>
+							{parsedSpawnHeading !== null ? `${parsedSpawnHeading.toString().padStart(3, '0')}°` : '--'}
+						</div>
+					</div>
 				</div>
 			</div>
 			<div className="content">
@@ -88,7 +109,13 @@ export const App: React.FC = () => {
 					mode={state.mode}
 					aircraft={state.aircraft}
 					onTapAircraft={(id) => state.setSelectedId(id)}
-					onTapEmpty={(r, b) => state.spawnAircraftAt(r, b)}
+					onTapEmpty={(r, b) =>
+						state.spawnAircraftAt(
+							r,
+							b,
+							parsedSpawnHeading === 360 ? 0 : parsedSpawnHeading ?? undefined
+						)
+					}
 					clearMeasureTrigger={clearMeasureTrigger}
 				/>
 				<ControlPanel

@@ -118,7 +118,7 @@ export function useRadarState(initial: Aircraft[]) {
 		setHistory((h) => [{ timestamp: Date.now(), aircraftId: id, action }, ...h].slice(0, 200))
 	}
 
-	function spawnAircraftAt(rNm: number, bearingDeg: number) {
+	function spawnAircraftAt(rNm: number, bearingDeg: number, initialHeadingDeg?: number) {
 		const n = seqRef.current++
 		// コールサイン: 指定リストからプレフィックスを選び、3桁乱数を付与
 		let callsign = ''
@@ -140,7 +140,10 @@ export function useRadarState(initial: Aircraft[]) {
 		const type = ['A320', 'B738', 'B772'][Math.floor(Math.random() * 3)]
 		const speedDisplay = 34
 		const altitudeH = 25
-		const headingDeg = bearingDeg
+		const headingDeg =
+			typeof initialHeadingDeg === 'number'
+				? ((Math.round(initialHeadingDeg) % 360) + 360) % 360
+				: bearingDeg
 		const ac: Aircraft = {
 			id,
 			callsign,
@@ -154,7 +157,10 @@ export function useRadarState(initial: Aircraft[]) {
 		}
 		setAircraft((list) => [ac, ...list])
 		setSelectedId(id)
-		logHistory(id, `SPAWN r=${rNm.toFixed(1)}nm brg=${Math.round(bearingDeg)}`)
+		logHistory(
+			id,
+			`SPAWN r=${rNm.toFixed(1)}nm brg=${Math.round(bearingDeg)} hdg=${Math.round(headingDeg)}`
+		)
 	}
 
 	function resetAll() {

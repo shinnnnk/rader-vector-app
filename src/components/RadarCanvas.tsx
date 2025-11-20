@@ -112,7 +112,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 		//    厚み5NM（17.5〜22.5）、弧長10NM → 角度 = 10/20 rad ≈ 28.647°
 		const centerRadiusNm = 20
 		const thicknessNm = 5
-		const arcLengthNm = 10
+		const arcLengthNm = 15
 		// 弧長は「短い方（内側=20NM）の円周上」で10NMになるよう角度を算出
 		const arcAngleDeg = (arcLengthNm / centerRadiusNm) * (180 / Math.PI) // ≈ 28.647°
 		// 指定方角（north0）を中心に弧を配置
@@ -131,6 +131,30 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			end,
 			'rgba(120,170,255,0.12)'
 		)
+
+		// D) 長方形中心を起点にした点線（200° / 160° 方向へ30NM）
+		const rectCenterNm = { x: 0, y: -((5 + 15) / 2) } // bearing 180°, r=10NM
+		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 200, 30, dpr)
+		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 160, 30, dpr)
+
+		// E) 長方形中心の2NM南側（=y-2）を起点にした点線（210° / 150° 方向へ30NM）
+		const offsetAnchorNm = { x: rectCenterNm.x, y: rectCenterNm.y - 2 }
+		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 210, 30, dpr)
+		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 150, 30, dpr)
+
+		// F) 中心から南31NM位置の2mm正方形
+		const squareCenter = polarToScreen(cx, cy, 31, 180, pxPerNm)
+		const halfSquarePx = mmToCanvasPx(1, dpr) / 2
+		ctx.save()
+		ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+		ctx.lineWidth = 1 * dpr
+		ctx.strokeRect(
+			squareCenter.x - halfSquarePx,
+			squareCenter.y - halfSquarePx,
+			halfSquarePx * 2,
+			halfSquarePx * 2
+		)
+		ctx.restore()
 
 		// aircraft
 		for (const ac of aircraft) {
@@ -450,6 +474,56 @@ function fillAnnularSector(
 	ctx.closePath()
 	ctx.fill()
 	ctx.restore()
+}
+
+function bearingToUnitVector(bearingDeg: number) {
+	const rad = (bearingDeg * Math.PI) / 180
+	return { x: Math.sin(rad), y: Math.cos(rad) }
+}
+
+function nmToScreen(
+	cx: number,
+	cy: number,
+	pxPerNm: number,
+	pointNm: { x: number; y: number }
+) {
+	return {
+		x: cx + pointNm.x * pxPerNm,
+		y: cy - pointNm.y * pxPerNm
+	}
+}
+
+function drawDashedSegmentFromNm(
+	ctx: CanvasRenderingContext2D,
+	cx: number,
+	cy: number,
+	pxPerNm: number,
+	startNm: { x: number; y: number },
+	bearingDeg: number,
+	lengthNm: number,
+	dpr: number
+) {
+	const dir = bearingToUnitVector(bearingDeg)
+	const endNm = {
+		x: startNm.x + dir.x * lengthNm,
+		y: startNm.y + dir.y * lengthNm
+	}
+	const startPx = nmToScreen(cx, cy, pxPerNm, startNm)
+	const endPx = nmToScreen(cx, cy, pxPerNm, endNm)
+	ctx.save()
+	ctx.strokeStyle = 'rgba(120,170,255,0.9)'
+	ctx.lineWidth = 1.5 * dpr
+	ctx.setLineDash([6 * dpr, 6 * dpr])
+	ctx.beginPath()
+	ctx.moveTo(startPx.x, startPx.y)
+	ctx.lineTo(endPx.x, endPx.y)
+	ctx.stroke()
+	ctx.restore()
+}
+
+function mmToCanvasPx(mm: number, dpr: number) {
+	const cssPxPerMm = 96 / 25.4
+	return mm * cssPxPerMm * dpr
 }
 
 function drawRadialRectangle(
