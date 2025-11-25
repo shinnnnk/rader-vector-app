@@ -45,10 +45,10 @@ html, body, #root {
 		border-top: 1px solid #1a1a1a;
 	}
 	.title-long {
-		display: none !important;
+		display: none; /* Hide long title on small screens */
 	}
 	.title-short {
-		display: inline !important;
+		display: block; /* Show short title on small screens */
 	}
 }
 
@@ -109,8 +109,8 @@ html, body, #root {
 }
 
 .title-short {
-  display: none !important;
+  display: none; /* Hide short title by default */
 }
 .title-long {
-  display: inline !important;
+  display: block; /* Show long title by default */
 }
