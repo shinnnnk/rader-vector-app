@@ -6,8 +6,7 @@ export interface ControlPanelProps {
 	selected: Aircraft | null
 	onHeading: (headingDeg: number) => void
 	history: { timestamp: number; aircraftId: string; action: string }[]
-	activeInput: 'spawn' | 'command' | null
-	setActiveInput: (input: 'spawn' | 'command' | null) => void
+	mode: 'spawn' | 'command' | 'measure'
 	onSpawnDigit: (digit: string) => void
 	onSpawnClear: () => void
 	onSpawnFocus: () => void
@@ -17,8 +16,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 	selected,
 	onHeading,
 	history,
-	activeInput,
-	setActiveInput,
+	mode,
 	onSpawnDigit,
 	onSpawnClear,
 	onSpawnFocus
@@ -56,15 +54,10 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 				<div className="row">
 					<input
 						ref={headingInputRef}
-						inputMode="numeric"
+						inputMode="none"
 						placeholder="Heading (0-359)"
 						value={heading}
 						onChange={(e) => setHeading(e.target.value)}
-						onFocus={() => setActiveInput('command')}
-						onBlur={() => {
-							// 少し遅延させて、キーボードボタンのクリックを処理してからblur
-							setTimeout(() => setActiveInput(null), 200)
-						}}
 					/>
 					<button onClick={submitHeading} disabled={!selected || heading === ''}>
 						指示
@@ -74,19 +67,19 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 			<div className="panel" style={{ paddingTop: 8 }}>
 				<NumericKeyboard
 					onDigit={(digit) => {
-						if (activeInput === 'spawn') {
+						if (mode === 'spawn') {
 							onSpawnDigit(digit)
 							onSpawnFocus()
-						} else if (activeInput === 'command') {
+						} else if (mode === 'command') {
 							setHeading((prev) => prev + digit)
 							headingInputRef.current?.focus()
 						}
 					}}
 					onClear={() => {
-						if (activeInput === 'spawn') {
+						if (mode === 'spawn') {
 							onSpawnClear()
 							onSpawnFocus()
-						} else if (activeInput === 'command') {
+						} else if (mode === 'command') {
 							setHeading('')
 							headingInputRef.current?.focus()
 						}

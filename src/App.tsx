@@ -15,7 +15,6 @@ export const App: React.FC = () => {
 	const [spawnHeadingInput, setSpawnHeadingInput] = useState<string>('')
 	const [clearMeasureTrigger, setClearMeasureTrigger] = useState(0)
 	const spawnHeadingInputRef = useRef<HTMLInputElement | null>(null)
-	const [activeInput, setActiveInput] = useState<'spawn' | 'command' | null>(null)
 
 	const parsedSpawnHeading = useMemo(() => {
 		const v = Number(spawnHeadingInput)
@@ -80,15 +79,10 @@ export const App: React.FC = () => {
 						<label style={{ fontSize: 12, opacity: 0.8 }}>生成HDG</label>
 						<input
 							ref={spawnHeadingInputRef}
-							inputMode="numeric"
+							inputMode="none"
 							placeholder="例: 270"
 							value={spawnHeadingInput}
 							onChange={(e) => setSpawnHeadingInput(e.target.value)}
-							onFocus={() => setActiveInput('spawn')}
-							onBlur={() => {
-								// 少し遅延させて、キーボードボタンのクリックを処理してからblur
-								setTimeout(() => setActiveInput(null), 200)
-							}}
 							style={{ width: 64 }}
 						/>
 						<div style={{ fontSize: 12, minWidth: 48, textAlign: 'center', opacity: 0.8 }}>
@@ -116,8 +110,7 @@ export const App: React.FC = () => {
 					selected={state.selected}
 					onHeading={(hdg) => state.selected && state.issueHeading(state.selected.id, hdg)}
 					history={state.history}
-					activeInput={activeInput}
-					setActiveInput={setActiveInput}
+					mode={state.mode}
 					onSpawnDigit={(digit) => {
 						setSpawnHeadingInput((prev) => prev + digit)
 						spawnHeadingInputRef.current?.focus()
