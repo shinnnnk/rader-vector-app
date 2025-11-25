@@ -58,7 +58,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 		ctx.strokeStyle = 'rgba(47,220,123,0.35)'
 		ctx.lineWidth = 1 * dpr
 		const maxR = Math.min(width, height) * 0.48
-		const steps = rangeNm === 20 ? [0, 10, 20] : [0, 10, 20, 30, 40, 50]
+		const steps = [0, 10, 20, 30, 40, 50]
 		for (const nm of steps) {
 			const r = (nm * pxPerNm)
 			ctx.beginPath()

@@ -74,7 +74,7 @@ const SPEED_PRESETS = [0.5, 1, 2, 5] as const
 export type SimSpeed = (typeof SPEED_PRESETS)[number]
 
 export function useRadarState(initial: Aircraft[]) {
-	const [rangeNm, setRangeNm] = useState<20 | 50>(20)
+	const [rangeNm, setRangeNm] = useState<50>(50)
 	const [mode, setMode] = useState<RadarMode>('spawn')
 	const [aircraft, setAircraft] = useState<Aircraft[]>(initial)
 	const [selectedId, setSelectedId] = useState<AircraftId | null>(null)
@@ -164,7 +164,7 @@ export function useRadarState(initial: Aircraft[]) {
 	}
 
 	function resetAll() {
-		setRangeNm(20)
+		setRangeNm(50)
 		// 深いコピーで初期状態へ
 		setAircraft(initialRef.current.map((a) => ({ ...a })))
 		setSelectedId(null)

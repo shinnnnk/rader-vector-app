@@ -54,20 +54,6 @@ export const App: React.FC = () => {
 						</button>
 					)}
 					<button onClick={state.resetAll}>リセット</button>
-					<button
-						onClick={() => state.setRangeNm(20)}
-						disabled={state.rangeNm === 20}
-						aria-pressed={state.rangeNm === 20}
-					>
-						20 NM
-					</button>
-					<button
-						onClick={() => state.setRangeNm(50)}
-						disabled={state.rangeNm === 50}
-						aria-pressed={state.rangeNm === 50}
-					>
-						50 NM
-					</button>
 					<div style={{ marginLeft: 16, display: 'flex', gap: 4 }}>
 						{state.speedPresets.map((speed) => {
 							const label =
