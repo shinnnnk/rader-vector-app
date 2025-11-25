@@ -7,9 +7,10 @@ export interface ControlPanelProps {
 	onHeading: (headingDeg: number) => void
 	history: { timestamp: number; aircraftId: string; action: string }[]
 	mode: 'spawn' | 'command' | 'measure'
-	onSpawnDigit: (digit: string) => void
-	onSpawnClear: () => void
-	onSpawnFocus: () => void
+	spawnHeadingInput: string
+	setSpawnHeadingInput: React.Dispatch<React.SetStateAction<string>>
+	spawnHeadingInputRef: React.RefObject<HTMLInputElement>
+	nextCallsign: string
 }
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({
@@ -17,22 +18,35 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 	onHeading,
 	history,
 	mode,
-	onSpawnDigit,
-	onSpawnClear,
-	onSpawnFocus
+	spawnHeadingInput,
+	setSpawnHeadingInput,
+	spawnHeadingInputRef,
+	nextCallsign
 }) => {
 	const [heading, setHeading] = useState<string>('')
 	const headingInputRef = useRef<HTMLInputElement | null>(null)
+
+	// Dynamic input properties based on mode
+	const currentInputRef = mode === 'spawn' ? spawnHeadingInputRef : headingInputRef
+	const currentInputValue = mode === 'spawn' ? spawnHeadingInput : heading
+	const currentSetInputValue = mode === 'spawn' ? setSpawnHeadingInput : setHeading
+	const currentPlaceholder = mode === 'spawn' ? '生成HDG (例: 270)' : 'Heading (0-359)'
+	const currentSubmitDisabled = mode === 'spawn' ? spawnHeadingInput === '' : (!selected || heading === '')
 
 	const selTitle = useMemo(() => {
 		if (!selected) return '未選択'
 		return `${selected.callsign} (${selected.code})`
 	}, [selected])
 
-	function submitHeading() {
-		const v = Number(heading)
-		if (Number.isFinite(v)) onHeading(((v % 360) + 360) % 360)
-		setHeading('')
+	function submitHeadingOrSpawn() {
+		const v = Number(currentInputValue)
+		if (Number.isFinite(v)) {
+			if (mode === 'command') {
+				onHeading(((v % 360) + 360) % 360)
+			}
+			// For spawn mode, the value is just set, no submit action needed here as tap on canvas triggers spawn
+		}
+		currentSetInputValue('') // Clear input after submit/action
 	}
 
 	return (
@@ -47,42 +61,39 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 				</ul>
 			</div>
 			<div className="panel">
-				<div className="row" style={{ justifyContent: 'space-between' }}>
-					<div>選択機</div>
-					<div>{selTitle}</div>
-				</div>
+				{mode === 'spawn' ? (
+					<div className="row" style={{ justifyContent: 'space-between' }}>
+						<div>次の航空機</div>
+						<div>{nextCallsign}</div>
+					</div>
+				) : (
+					<div className="row" style={{ justifyContent: 'space-between' }}>
+						<div>選択機</div>
+						<div>{selTitle}</div>
+					</div>
+				)}
 				<div className="row">
 					<input
-						ref={headingInputRef}
+						ref={currentInputRef}
 						inputMode="none"
-						placeholder="Heading (0-359)"
-						value={heading}
-						onChange={(e) => setHeading(e.target.value)}
+						placeholder={currentPlaceholder}
+						value={currentInputValue}
+						onChange={(e) => currentSetInputValue(e.target.value)}
 					/>
-					<button onClick={submitHeading} disabled={!selected || heading === ''}>
-						指示
+					<button onClick={submitHeadingOrSpawn} disabled={currentSubmitDisabled}>
+						{mode === 'spawn' ? '適用' : '指示'}
 					</button>
 				</div>
 			</div>
 			<div className="panel" style={{ paddingTop: 8 }}>
 				<NumericKeyboard
 					onDigit={(digit) => {
-						if (mode === 'spawn') {
-							onSpawnDigit(digit)
-							onSpawnFocus()
-						} else if (mode === 'command') {
-							setHeading((prev) => prev + digit)
-							headingInputRef.current?.focus()
-						}
+						currentSetInputValue((prev) => prev + digit)
+						currentInputRef.current?.focus()
 					}}
 					onClear={() => {
-						if (mode === 'spawn') {
-							onSpawnClear()
-							onSpawnFocus()
-						} else if (mode === 'command') {
-							setHeading('')
-							headingInputRef.current?.focus()
-						}
+						currentSetInputValue('')
+						currentInputRef.current?.focus()
 					}}
 				/>
 			</div>

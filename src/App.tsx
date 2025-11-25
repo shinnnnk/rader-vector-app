@@ -70,20 +70,6 @@ export const App: React.FC = () => {
 							)
 						})}
 					</div>
-					<div style={{ marginLeft: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-						<label style={{ fontSize: 12, opacity: 0.8 }}>生成HDG</label>
-						<input
-							ref={spawnHeadingInputRef}
-							inputMode="none"
-							placeholder="例: 270"
-							value={spawnHeadingInput}
-							onChange={(e) => setSpawnHeadingInput(e.target.value)}
-							style={{ width: 64 }}
-						/>
-						<div style={{ fontSize: 12, minWidth: 48, textAlign: 'center', opacity: 0.8 }}>
-							{parsedSpawnHeading !== null ? `${parsedSpawnHeading.toString().padStart(3, '0')}°` : '--'}
-						</div>
-					</div>
 				</div>
 			</div>
 			<div className="content">
@@ -105,15 +91,10 @@ export const App: React.FC = () => {
 					onHeading={(hdg) => state.selected && state.issueHeading(state.selected.id, hdg)}
 					history={state.history}
 					mode={state.mode}
-					onSpawnDigit={(digit) => {
-						setSpawnHeadingInput((prev) => prev + digit)
-						spawnHeadingInputRef.current?.focus()
-					}}
-					onSpawnClear={() => {
-						setSpawnHeadingInput('')
-						spawnHeadingInputRef.current?.focus()
-					}}
-					onSpawnFocus={() => spawnHeadingInputRef.current?.focus()}
+					spawnHeadingInput={spawnHeadingInput}
+					setSpawnHeadingInput={setSpawnHeadingInput}
+					spawnHeadingInputRef={spawnHeadingInputRef}
+					nextCallsign={state.nextCallsign}
 				/>
 			</div>
 		</div>

@@ -73,6 +73,21 @@ export type RadarMode = 'spawn' | 'command' | 'measure'
 const SPEED_PRESETS = [0.5, 1, 2, 5] as const
 export type SimSpeed = (typeof SPEED_PRESETS)[number]
 
+let callsignSeq = 1;
+function generateCallsign(existingAircraft: Aircraft[]): string {
+	const maxAttempts = 10
+	for (let attempt = 0; attempt < maxAttempts; attempt++) {
+		const prefix = CALLSIGN_PREFIXES[Math.floor(Math.random() * CALLSIGN_PREFIXES.length)]
+		const flightNumber = String(Math.floor(Math.random() * 900) + 100)
+		const candidate = `${prefix}${flightNumber}`
+		if (!existingAircraft.some((a) => a.id === candidate)) {
+			return candidate
+		}
+	}
+	// Fallback
+	return `AC${String(callsignSeq++).padStart(3, '0')}`
+}
+
 export function useRadarState(initial: Aircraft[]) {
 	const [rangeNm, setRangeNm] = useState<50>(50)
 	const [mode, setMode] = useState<RadarMode>('spawn')
@@ -80,9 +95,13 @@ export function useRadarState(initial: Aircraft[]) {
 	const [selectedId, setSelectedId] = useState<AircraftId | null>(null)
 	const [history, setHistory] = useState<HistoryItem[]>([])
 	const [simSpeed, setSimSpeed] = useState<SimSpeed>(1)
+	const [nextCallsign, setNextCallsign] = useState<string>('')
 	const timerRef = useRef<number | null>(null)
 	const initialRef = useRef<Aircraft[]>(initial)
-	const seqRef = useRef<number>(1)
+
+	useEffect(() => {
+		setNextCallsign(generateCallsign(initial))
+	}, [initial])
 
 	// 4秒ごと更新（速度倍率に応じて間隔を調整）
 	useEffect(() => {
@@ -119,22 +138,7 @@ export function useRadarState(initial: Aircraft[]) {
 	}
 
 	function spawnAircraftAt(rNm: number, bearingDeg: number, initialHeadingDeg?: number) {
-		const n = seqRef.current++
-		// コールサイン: 指定リストからプレフィックスを選び、3桁乱数を付与
-		let callsign = ''
-		const maxAttempts = 10
-		for (let attempt = 0; attempt < maxAttempts; attempt++) {
-			const prefix = CALLSIGN_PREFIXES[Math.floor(Math.random() * CALLSIGN_PREFIXES.length)]
-			const flightNumber = String(Math.floor(Math.random() * 900) + 100)
-			const candidate = `${prefix}${flightNumber}`
-			if (!aircraft.some((a) => a.id === candidate)) {
-				callsign = candidate
-				break
-			}
-		}
-		if (!callsign) {
-			callsign = `AC${String(n).padStart(3, '0')}`
-		}
+		const callsign = nextCallsign
 		const id = callsign
 		const code = String(Math.floor(Math.random() * 1000)).padStart(3, '0')
 		const type = ['A320', 'B738', 'B772'][Math.floor(Math.random() * 3)]
@@ -155,7 +159,11 @@ export function useRadarState(initial: Aircraft[]) {
 			speedDisplay,
 			altitudeH
 		}
-		setAircraft((list) => [ac, ...list])
+		setAircraft((list) => {
+			const newList = [ac, ...list]
+			setNextCallsign(generateCallsign(newList)) // Generate next callsign after update
+			return newList
+		})
 		setSelectedId(id)
 		logHistory(
 			id,
@@ -166,10 +174,11 @@ export function useRadarState(initial: Aircraft[]) {
 	function resetAll() {
 		setRangeNm(50)
 		// 深いコピーで初期状態へ
-		setAircraft(initialRef.current.map((a) => ({ ...a })))
+		const initialAircraft = initialRef.current.map((a) => ({ ...a }))
+		setAircraft(initialAircraft)
 		setSelectedId(null)
 		setHistory([])
-		seqRef.current = 1
+		setNextCallsign(generateCallsign(initialAircraft))
 	}
 
 	return {
@@ -188,7 +197,8 @@ export function useRadarState(initial: Aircraft[]) {
 		setSimSpeed,
 		issueHeading,
 		resetAll,
-		spawnAircraftAt
+		spawnAircraftAt,
+		nextCallsign
 	}
 }
 
