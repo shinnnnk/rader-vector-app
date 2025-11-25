@@ -20,6 +20,109 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 	const [measureCurrent, setMeasureCurrent] = useState<{ x: number; y: number } | null>(null)
 	const isDraggingRef = useRef(false)
 
+	const draw = useMemo(
+		() => () => {
+			const canvas = canvasRef.current
+			if (!canvas) return
+			const ctx = canvas.getContext('2d')
+			if (!ctx) return
+			const width = canvas.width
+			const height = canvas.height
+			const cx = width / 2
+			const cy = height / 2
+			const pxPerNm = computePxPerNm(width / dpr, height / dpr, rangeNm) * dpr
+
+			// clear
+			ctx.clearRect(0, 0, width, height)
+			ctx.fillStyle = '#000000'
+			ctx.fillRect(0, 0, width, height)
+
+			// grid rings
+			ctx.strokeStyle = 'rgba(47,220,123,0.35)'
+			ctx.lineWidth = 1 * dpr
+			const maxR = Math.min(width, height) * 0.48
+			const steps = [0, 10, 20, 30, 40, 50]
+			for (const nm of steps) {
+				const r = nm * pxPerNm
+				ctx.beginPath()
+				ctx.arc(cx, cy, r, 0, Math.PI * 2)
+				ctx.stroke()
+			}
+
+			// PCA overlay
+			for (let i = 1, nm = 10; nm <= 80; i++, nm += 10) {
+				const r = nm * pxPerNm
+				if (i === 5) {
+					ctx.strokeStyle = 'rgba(60,120,255,0.95)' // 濃い青
+					ctx.lineWidth = 2 * dpr
+				} else {
+					ctx.strokeStyle = 'rgba(120,170,255,0.45)'
+					ctx.lineWidth = 1 * dpr
+				}
+				ctx.beginPath()
+				ctx.arc(cx, cy, r, 0, Math.PI * 2)
+				ctx.stroke()
+			}
+			const shapeBearingNorth0 = 180
+			drawRadialRectangle(ctx, cx, cy, pxPerNm, shapeBearingNorth0, 5, 15, 2, 'rgba(120,170,255,0.8)')
+			const centerRadiusNm = 20
+			const thicknessNm = 5
+			const arcLengthNm = 15
+			const arcAngleDeg = (arcLengthNm / centerRadiusNm) * (180 / Math.PI)
+			const start = shapeBearingNorth0 - arcAngleDeg / 2
+			const end = shapeBearingNorth0 + arcAngleDeg / 2
+			fillAnnularSector(
+				ctx,
+				cx,
+				cy,
+				pxPerNm,
+				dpr,
+				centerRadiusNm,
+				centerRadiusNm + thicknessNm,
+				start,
+				end,
+				'rgba(120,170,255,0.12)'
+			)
+			const rectCenterNm = { x: 0, y: -((5 + 15) / 2) }
+			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 200, 20.41, dpr)
+			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 160, 20.41, dpr)
+			const offsetAnchorNm = { x: rectCenterNm.x, y: rectCenterNm.y - 2 }
+			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 210, 18.8, dpr)
+			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 150, 18.8, dpr)
+			const squareCenter = polarToScreen(cx, cy, 31, 180, pxPerNm)
+			const halfSquarePx = mmToCanvasPx(1, dpr) / 2
+			ctx.save()
+			ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+			ctx.lineWidth = 1 * dpr
+			ctx.strokeRect(
+				squareCenter.x - halfSquarePx,
+				squareCenter.y - halfSquarePx,
+				halfSquarePx * 2,
+				halfSquarePx * 2
+			)
+			ctx.restore()
+
+			// aircraft
+			for (const ac of aircraft) {
+				const p = polarToScreen(cx, cy, ac.rNm, ac.bearingDeg, pxPerNm)
+				drawAircraftIcon(ctx, p.x, p.y, 4 * dpr, ac.headingDeg)
+				drawHeadingLine(ctx, p.x, p.y, ac.headingDeg, pxPerNm * 2)
+				const hdg = typeof ac.targetHeadingDeg === 'number' ? ac.targetHeadingDeg : ac.headingDeg
+				let hdgInt = Math.round(hdg) % 360
+				if (hdgInt < 0) hdgInt += 360
+				const hdgDisplay = hdgInt === 0 ? 360 : hdgInt
+				const label = `${ac.callsign}\nHDG ${String(hdgDisplay).padStart(3, '0')}`
+				drawLabel(ctx, p.x, p.y, label, 12 * dpr)
+			}
+
+			// measure line
+			if (mode === 'measure' && measureStart && measureCurrent) {
+				drawMeasureLine(ctx, measureStart, measureCurrent, cx, cy, pxPerNm, dpr)
+			}
+		},
+		[aircraft, dpr, measureCurrent, measureStart, mode, rangeNm]
+	)
+
 	useEffect(() => {
 		function resize() {
 			const el = containerRef.current
@@ -35,220 +138,65 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 		resize()
 		window.addEventListener('resize', resize)
 		return () => window.removeEventListener('resize', resize)
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [rangeNm, aircraft])
-
-	function draw() {
-		const canvas = canvasRef.current
-		if (!canvas) return
-		const ctx = canvas.getContext('2d')
-		if (!ctx) return
-		const width = canvas.width
-		const height = canvas.height
-		const cx = width / 2
-		const cy = height / 2
-		const pxPerNm = computePxPerNm(width / dpr, height / dpr, rangeNm) * dpr
-
-		// clear
-		ctx.clearRect(0, 0, width, height)
-		ctx.fillStyle = '#000000'
-		ctx.fillRect(0, 0, width, height)
-
-		// grid rings
-		ctx.strokeStyle = 'rgba(47,220,123,0.35)'
-		ctx.lineWidth = 1 * dpr
-		const maxR = Math.min(width, height) * 0.48
-		const steps = [0, 10, 20, 30, 40, 50]
-		for (const nm of steps) {
-			const r = (nm * pxPerNm)
-			ctx.beginPath()
-			ctx.arc(cx, cy, r, 0, Math.PI * 2)
-			ctx.stroke()
-		}
-		// sector lines: N E S W
-		ctx.strokeStyle = 'rgba(47,220,123,0.25)'
-		const cardinal = [0, 90, 180, 270]
-		for (const b of cardinal) {
-			const rad = (b * Math.PI) / 180
-			const x = cx + maxR * Math.sin(rad)
-			const y = cy - maxR * Math.cos(rad)
-			ctx.beginPath()
-			ctx.moveTo(cx, cy)
-			ctx.lineTo(x, y)
-			ctx.stroke()
-		}
-
-		// PCA overlay（新仕様：同心円/南向き長方形/南側バウムクーヘン）
-		// A) 同心円（10〜80NM）— 5本目（=50NM）を濃い青で強調
-		for (let i = 1, nm = 10; nm <= 80; i++, nm += 10) {
-			const r = nm * pxPerNm
-			if (i === 5) {
-				ctx.strokeStyle = 'rgba(60,120,255,0.95)' // 濃い青
-				ctx.lineWidth = 2 * dpr
-			} else {
-				ctx.strokeStyle = 'rgba(120,170,255,0.45)'
-				ctx.lineWidth = 1 * dpr
-			}
-			ctx.beginPath()
-			ctx.arc(cx, cy, r, 0, Math.PI * 2)
-			ctx.stroke()
-		}
-		// 方角の希望: 上=0(360)、右=270。内部実装は 0°=北・時計回り。
-		// 本指定では配置角を 180°（下=南）に固定する。
-		const shapeBearingNorth0 = 180
-		// B) 長方形：方向= shapeBearing、r:5〜15、幅=4（±2）
-		drawRadialRectangle(
-			ctx,
-			cx,
-			cy,
-			pxPerNm,
-			shapeBearingNorth0,
-			5,
-			15,
-			2,
-			'rgba(120,170,255,0.8)'
-		)
-		// C) バウムクーヘン型：中心から2つ目の円（20NM）付近で、長方形と同じ方角に配置
-		//    厚み5NM（17.5〜22.5）、弧長10NM → 角度 = 10/20 rad ≈ 28.647°
-		const centerRadiusNm = 20
-		const thicknessNm = 5
-		const arcLengthNm = 15
-		// 弧長は「短い方（内側=20NM）の円周上」で10NMになるよう角度を算出
-		const arcAngleDeg = (arcLengthNm / centerRadiusNm) * (180 / Math.PI) // ≈ 28.647°
-		// 指定方角（north0）を中心に弧を配置
-		const start = shapeBearingNorth0 - arcAngleDeg / 2
-		const end = shapeBearingNorth0 + arcAngleDeg / 2
-		fillAnnularSector(
-			ctx,
-			cx,
-			cy,
-			pxPerNm,
-			dpr,
-			// 短い方（内側）の曲線を円周（20NMリング）に一致させる
-			centerRadiusNm,
-			centerRadiusNm + thicknessNm,
-			start,
-			end,
-			'rgba(120,170,255,0.12)'
-		)
-
-		// D) 長方形中心を起点にした点線（200° / 160° 方向へ、30NMの円周まで）
-		const rectCenterNm = { x: 0, y: -((5 + 15) / 2) } // bearing 180°, r=10NM
-		// 長方形中心(0, -10)から30NMの円周までの距離: 200°方向≈20.41NM, 160°方向≈20.41NM
-		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 200, 20.41, dpr)
-		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 160, 20.41, dpr)
-
-		// E) 長方形中心の2NM南側（=y-2）を起点にした点線（210° / 150° 方向へ、30NMの円周まで）
-		const offsetAnchorNm = { x: rectCenterNm.x, y: rectCenterNm.y - 2 } // (0, -12)
-		// 2NM南側(0, -12)から30NMの円周までの距離: 210°方向≈18.80NM, 150°方向≈18.80NM
-		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 210, 18.80, dpr)
-		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 150, 18.80, dpr)
-
-		// F) 中心から南31NM位置の2mm正方形
-		const squareCenter = polarToScreen(cx, cy, 31, 180, pxPerNm)
-		const halfSquarePx = mmToCanvasPx(1, dpr) / 2
-		ctx.save()
-		ctx.strokeStyle = 'rgba(255,255,255,0.95)'
-		ctx.lineWidth = 1 * dpr
-		ctx.strokeRect(
-			squareCenter.x - halfSquarePx,
-			squareCenter.y - halfSquarePx,
-			halfSquarePx * 2,
-			halfSquarePx * 2
-		)
-		ctx.restore()
-
-		// aircraft
-		for (const ac of aircraft) {
-			const p = polarToScreen(cx, cy, ac.rNm, ac.bearingDeg, pxPerNm)
-			// symbol: yellow circle with white rim + three short white slits behind motion
-			drawAircraftIcon(ctx, p.x, p.y, 4 * dpr, ac.headingDeg)
-			// heading line: 現在の進行方向に2NMの線
-			drawHeadingLine(ctx, p.x, p.y, ac.headingDeg, pxPerNm * 2)
-			// label: 1行目=コールサイン, 2行目=HDG ddd のみ
-			const hdg = typeof ac.targetHeadingDeg === 'number' ? ac.targetHeadingDeg : ac.headingDeg
-			let hdgInt = Math.round(hdg) % 360
-			if (hdgInt < 0) hdgInt += 360
-			const hdgDisplay = hdgInt === 0 ? 360 : hdgInt
-			const label = `${ac.callsign}\nHDG ${String(hdgDisplay).padStart(3, '0')}`
-			drawLabel(ctx, p.x, p.y, label, 12 * dpr)
-		}
-
-		// measure line
-		if (mode === 'measure' && measureStart && measureCurrent) {
-			drawMeasureLine(ctx, measureStart, measureCurrent, cx, cy, pxPerNm, dpr)
-		}
-	}
+	}, [dpr, draw])
 
 	useEffect(() => {
 		draw()
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [rangeNm, aircraft, measureStart, measureCurrent, mode])
+	}, [draw])
 
-	function getCanvasPoint(ev: React.MouseEvent | React.TouchEvent): { x: number; y: number } | null {
-		const canvas = canvasRef.current
-		if (!canvas) return null
-		const rect = canvas.getBoundingClientRect()
-		let clientX: number, clientY: number
-		if ('touches' in ev && ev.touches.length > 0) {
-			clientX = ev.touches[0].clientX
-			clientY = ev.touches[0].clientY
-		} else if ('clientX' in ev) {
-			clientX = ev.clientX
-			clientY = ev.clientY
-		} else {
-			return null
-		}
-		return {
-			x: (clientX - rect.left) * dpr,
-			y: (clientY - rect.top) * dpr
-		}
-	}
+	const getCanvasPoint = useMemo(
+		() => (ev: MouseEvent | TouchEvent): { x: number; y: number } | null => {
+			const canvas = canvasRef.current
+			if (!canvas) return null
+			const rect = canvas.getBoundingClientRect()
+			let clientX: number, clientY: number
+			if ('touches' in ev) {
+				if (ev.touches.length === 0) return null
+				clientX = ev.touches[0].clientX
+				clientY = ev.touches[0].clientY
+			} else {
+				clientX = ev.clientX
+				clientY = ev.clientY
+			}
+			return {
+				x: (clientX - rect.left) * dpr,
+				y: (clientY - rect.top) * dpr
+			}
+		},
+		[dpr]
+	)
 
-	function handlePointerDown(ev: React.MouseEvent | React.TouchEvent) {
-		// For touch events, only proceed if it's a single touch.
-		if ('touches' in ev && ev.touches.length > 1) {
-			return // Let browser handle multi-touch gestures (e.g., pinch-zoom).
-		}
+	// #endregion
+
+	// #region Event Handlers
+	// --- Mouse Handlers ---
+	const handleMouseDown = (ev: React.MouseEvent) => {
 		if (mode !== 'measure') return
-		const point = getCanvasPoint(ev)
+		const point = getCanvasPoint(ev.nativeEvent)
 		if (!point) return
 		setMeasureStart(point)
 		setMeasureCurrent(point)
 		isDraggingRef.current = true
-		// No preventDefault here. Let's see if the browser needs to process the 'down' event.
 	}
-
-	function handlePointerMove(ev: React.MouseEvent | React.TouchEvent) {
-		if ('touches' in ev && ev.touches.length > 1) {
-			return // Let browser handle multi-touch gestures.
-		}
+	const handleMouseMove = (ev: React.MouseEvent) => {
 		if (mode !== 'measure' || !isDraggingRef.current) return
-		const point = getCanvasPoint(ev)
+		const point = getCanvasPoint(ev.nativeEvent)
 		if (!point) return
 		setMeasureCurrent(point)
-		if ('preventDefault' in ev) ev.preventDefault() // Prevent scroll/etc. during measurement drag
 	}
-
-	function handlePointerUp(ev: React.MouseEvent | React.TouchEvent) {
-		// Don't check touches.length here, as it will be 0 on touchend
+	const handleMouseUp = () => {
 		if (mode !== 'measure' || !isDraggingRef.current) return
 		isDraggingRef.current = false
-		// No preventDefault needed on up/end, as the action is over.
 	}
 
-	function handleClick(ev: React.MouseEvent) {
-		if (mode === 'measure') {
-			// 計測モードではクリックは無視（計測線は残す）
-			return
-		}
+	const handleClick = (ev: React.MouseEvent) => {
+		if (mode === 'measure') return
 		if (!onTapAircraft && !onTapEmpty) return
 		const canvas = canvasRef.current
 		if (!canvas) return
 		const rect = canvas.getBoundingClientRect()
 		const x = (ev.clientX - rect.left) * dpr
 		const y = (ev.clientY - rect.top) * dpr
-		// hit test: nearest aircraft within 16px
 		const width = canvas.width
 		const height = canvas.height
 		const cx = width / 2
@@ -268,12 +216,56 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			onTapAircraft(bestId)
 			return
 		}
-
 		if (mode === 'spawn' && !bestId && onTapEmpty) {
 			const polar = screenToPolar(cx, cy, x, y, pxPerNm)
 			onTapEmpty(polar.rNm, polar.bearingDeg)
 		}
 	}
+
+	// --- Touch Handlers (manual, non-passive) ---
+	useEffect(() => {
+		const el = containerRef.current
+		if (!el) return
+
+		const handleTouchStart = (ev: TouchEvent) => {
+			if (mode !== 'measure') return
+			if (ev.touches.length === 1) {
+				const point = getCanvasPoint(ev)
+				if (!point) return
+				setMeasureStart(point)
+				setMeasureCurrent(point)
+				isDraggingRef.current = true
+			}
+		}
+
+		const handleTouchMove = (ev: TouchEvent) => {
+			if (mode !== 'measure' || !isDraggingRef.current) return
+			if (ev.touches.length === 1) {
+				ev.preventDefault()
+				const point = getCanvasPoint(ev)
+				if (!point) return
+				setMeasureCurrent(point)
+			}
+		}
+
+		const handleTouchEnd = () => {
+			if (isDraggingRef.current) {
+				isDraggingRef.current = false
+			}
+		}
+
+		el.addEventListener('touchstart', handleTouchStart)
+		el.addEventListener('touchmove', handleTouchMove, { passive: false })
+		el.addEventListener('touchend', handleTouchEnd)
+		el.addEventListener('touchcancel', handleTouchEnd)
+
+		return () => {
+			el.removeEventListener('touchstart', handleTouchStart)
+			el.removeEventListener('touchmove', handleTouchMove)
+			el.removeEventListener('touchend', handleTouchEnd)
+			el.removeEventListener('touchcancel', handleTouchEnd)
+		}
+	}, [getCanvasPoint, mode])
 
 	// モード変更時に計測をリセット
 	useEffect(() => {
@@ -281,21 +273,17 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 		setMeasureCurrent(null)
 		isDraggingRef.current = false
 	}, [mode])
-
-
+	// #endregion
 
 	return (
 		<div
 			ref={containerRef}
 			className="canvas-wrap"
 			onClick={handleClick}
-			onMouseDown={handlePointerDown}
-			onMouseMove={handlePointerMove}
-			onMouseUp={handlePointerUp}
-			onMouseLeave={handlePointerUp}
-			onTouchStart={handlePointerDown}
-			onTouchMove={handlePointerMove}
-			onTouchEnd={handlePointerUp}
+			onMouseDown={handleMouseDown}
+			onMouseMove={handleMouseMove}
+			onMouseUp={handleMouseUp}
+			onMouseLeave={handleMouseUp}
 		>
 			<canvas ref={canvasRef} />
 		</div>
