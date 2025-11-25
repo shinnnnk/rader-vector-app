@@ -132,15 +132,17 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			'rgba(120,170,255,0.12)'
 		)
 
-		// D) 長方形中心を起点にした点線（200° / 160° 方向へ30NM）
+		// D) 長方形中心を起点にした点線（200° / 160° 方向へ、30NMの円周まで）
 		const rectCenterNm = { x: 0, y: -((5 + 15) / 2) } // bearing 180°, r=10NM
-		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 200, 30, dpr)
-		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 160, 30, dpr)
+		// 長方形中心(0, -10)から30NMの円周までの距離: 200°方向≈20.41NM, 160°方向≈20.41NM
+		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 200, 20.41, dpr)
+		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 160, 20.41, dpr)
 
-		// E) 長方形中心の2NM南側（=y-2）を起点にした点線（210° / 150° 方向へ30NM）
-		const offsetAnchorNm = { x: rectCenterNm.x, y: rectCenterNm.y - 2 }
-		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 210, 30, dpr)
-		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 150, 30, dpr)
+		// E) 長方形中心の2NM南側（=y-2）を起点にした点線（210° / 150° 方向へ、30NMの円周まで）
+		const offsetAnchorNm = { x: rectCenterNm.x, y: rectCenterNm.y - 2 } // (0, -12)
+		// 2NM南側(0, -12)から30NMの円周までの距離: 210°方向≈18.80NM, 150°方向≈18.80NM
+		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 210, 18.80, dpr)
+		drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 150, 18.80, dpr)
 
 		// F) 中心から南31NM位置の2mm正方形
 		const squareCenter = polarToScreen(cx, cy, 31, 180, pxPerNm)
