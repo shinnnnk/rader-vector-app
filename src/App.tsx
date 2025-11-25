@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useRef } from 'react'
 import { RadarCanvas } from './components/RadarCanvas'
 import { ControlPanel } from './components/ControlPanel'
 import { useRadarState } from './state/store'
@@ -14,6 +14,8 @@ export const App: React.FC = () => {
 	const state = useRadarState(init)
 	const [spawnHeadingInput, setSpawnHeadingInput] = useState<string>('')
 	const [clearMeasureTrigger, setClearMeasureTrigger] = useState(0)
+	const spawnHeadingInputRef = useRef<HTMLInputElement | null>(null)
+	const [activeInput, setActiveInput] = useState<'spawn' | 'command' | null>(null)
 
 	const parsedSpawnHeading = useMemo(() => {
 		const v = Number(spawnHeadingInput)
@@ -77,10 +79,16 @@ export const App: React.FC = () => {
 					<div style={{ marginLeft: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
 						<label style={{ fontSize: 12, opacity: 0.8 }}>生成HDG</label>
 						<input
+							ref={spawnHeadingInputRef}
 							inputMode="numeric"
 							placeholder="例: 270"
 							value={spawnHeadingInput}
 							onChange={(e) => setSpawnHeadingInput(e.target.value)}
+							onFocus={() => setActiveInput('spawn')}
+							onBlur={() => {
+								// 少し遅延させて、キーボードボタンのクリックを処理してからblur
+								setTimeout(() => setActiveInput(null), 200)
+							}}
 							style={{ width: 64 }}
 						/>
 						<div style={{ fontSize: 12, minWidth: 48, textAlign: 'center', opacity: 0.8 }}>
@@ -108,6 +116,17 @@ export const App: React.FC = () => {
 					selected={state.selected}
 					onHeading={(hdg) => state.selected && state.issueHeading(state.selected.id, hdg)}
 					history={state.history}
+					activeInput={activeInput}
+					setActiveInput={setActiveInput}
+					onSpawnDigit={(digit) => {
+						setSpawnHeadingInput((prev) => prev + digit)
+						spawnHeadingInputRef.current?.focus()
+					}}
+					onSpawnClear={() => {
+						setSpawnHeadingInput('')
+						spawnHeadingInputRef.current?.focus()
+					}}
+					onSpawnFocus={() => spawnHeadingInputRef.current?.focus()}
 				/>
 			</div>
 		</div>
