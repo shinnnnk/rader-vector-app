@@ -216,7 +216,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 		setMeasureStart(point)
 		setMeasureCurrent(point)
 		isDraggingRef.current = true
-		if ('preventDefault' in ev) ev.preventDefault() // Prevent scroll/etc. during measurement drag
+		// No preventDefault here. Let's see if the browser needs to process the 'down' event.
 	}
 
 	function handlePointerMove(ev: React.MouseEvent | React.TouchEvent) {
