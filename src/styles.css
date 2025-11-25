@@ -45,10 +45,10 @@ html, body, #root {
 		border-top: 1px solid #1a1a1a;
 	}
 	.title-long {
-		display: none;
+		display: none !important;
 	}
 	.title-short {
-		display: inline;
+		display: inline !important;
 	}
 }
 
@@ -109,8 +109,8 @@ html, body, #root {
 }
 
 .title-short {
-  display: none;
+  display: none !important;
 }
 .title-long {
-  display: inline;
+  display: inline !important;
 }
