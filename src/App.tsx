@@ -13,7 +13,6 @@ export const App: React.FC = () => {
 	const init = useMemo(seedAircraft, [])
 	const state = useRadarState(init)
 	const [spawnHeadingInput, setSpawnHeadingInput] = useState<string>('')
-	const [clearMeasureTrigger, setClearMeasureTrigger] = useState(0)
 	const spawnHeadingInputRef = useRef<HTMLInputElement | null>(null)
 
 	const parsedSpawnHeading = useMemo(() => {
@@ -49,11 +48,7 @@ export const App: React.FC = () => {
 					>
 						計測
 					</button>
-					{state.mode === 'measure' && (
-						<button onClick={() => setClearMeasureTrigger((prev) => prev + 1)}>
-							計測クリア
-						</button>
-					)}
+
 					<button onClick={state.resetAll}>リセット</button>
 					<div style={{ marginLeft: 16, display: 'flex', gap: 4 }}>
 						{state.speedPresets.map((speed) => {
@@ -104,7 +99,6 @@ export const App: React.FC = () => {
 							parsedSpawnHeading === 360 ? 0 : parsedSpawnHeading ?? undefined
 						)
 					}
-					clearMeasureTrigger={clearMeasureTrigger}
 				/>
 				<ControlPanel
 					selected={state.selected}

@@ -9,10 +9,10 @@ export interface RadarCanvasProps {
 	aircraft: Aircraft[]
 	onTapAircraft?: (id: string) => void
 	onTapEmpty?: (rNm: number, bearingDeg: number) => void
-	clearMeasureTrigger?: number
+
 }
 
-export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraft, onTapAircraft, onTapEmpty, clearMeasureTrigger }) => {
+export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraft, onTapAircraft, onTapEmpty }) => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
 	const containerRef = useRef<HTMLDivElement | null>(null)
 	const dpr = useMemo(() => window.devicePixelRatio || 1, [])
@@ -206,27 +206,35 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 	}
 
 	function handlePointerDown(ev: React.MouseEvent | React.TouchEvent) {
+		// For touch events, only proceed if it's a single touch.
+		if ('touches' in ev && ev.touches.length > 1) {
+			return // Let browser handle multi-touch gestures (e.g., pinch-zoom).
+		}
 		if (mode !== 'measure') return
 		const point = getCanvasPoint(ev)
 		if (!point) return
 		setMeasureStart(point)
 		setMeasureCurrent(point)
 		isDraggingRef.current = true
-		if ('preventDefault' in ev) ev.preventDefault()
+		if ('preventDefault' in ev) ev.preventDefault() // Prevent scroll/etc. during measurement drag
 	}
 
 	function handlePointerMove(ev: React.MouseEvent | React.TouchEvent) {
+		if ('touches' in ev && ev.touches.length > 1) {
+			return // Let browser handle multi-touch gestures.
+		}
 		if (mode !== 'measure' || !isDraggingRef.current) return
 		const point = getCanvasPoint(ev)
 		if (!point) return
 		setMeasureCurrent(point)
-		if ('preventDefault' in ev) ev.preventDefault()
+		if ('preventDefault' in ev) ev.preventDefault() // Prevent scroll/etc. during measurement drag
 	}
 
 	function handlePointerUp(ev: React.MouseEvent | React.TouchEvent) {
+		// Don't check touches.length here, as it will be 0 on touchend
 		if (mode !== 'measure' || !isDraggingRef.current) return
 		isDraggingRef.current = false
-		if ('preventDefault' in ev) ev.preventDefault()
+		// No preventDefault needed on up/end, as the action is over.
 	}
 
 	function handleClick(ev: React.MouseEvent) {
@@ -274,20 +282,12 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 		isDraggingRef.current = false
 	}, [mode])
 
-	// clearMeasureTriggerが変更されたら計測をクリア
-	useEffect(() => {
-		if (clearMeasureTrigger !== undefined && clearMeasureTrigger > 0) {
-			setMeasureStart(null)
-			setMeasureCurrent(null)
-			isDraggingRef.current = false
-		}
-	}, [clearMeasureTrigger])
+
 
 	return (
 		<div
 			ref={containerRef}
 			className="canvas-wrap"
-			style={{ touchAction: mode === 'measure' ? 'none' : 'manipulation' }}
 			onClick={handleClick}
 			onMouseDown={handlePointerDown}
 			onMouseMove={handlePointerMove}
