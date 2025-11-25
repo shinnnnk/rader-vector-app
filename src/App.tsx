@@ -25,7 +25,10 @@ export const App: React.FC = () => {
 	return (
 		<div className="app">
 			<div className="topbar">
-				<div>ATC Training Radar</div>
+				<div>
+					<span className="title-long">ATC Training Radar</span>
+					<span className="title-short">ATC</span>
+				</div>
 				<div className="row">
 					<button
 						onClick={() => state.setMode('spawn')}
@@ -49,7 +52,7 @@ export const App: React.FC = () => {
 						計測
 					</button>
 
-					<button onClick={state.resetAll}>リセット</button>
+					<button onClick={state.resetAll}>Reset</button>
 					<div style={{ marginLeft: 16, display: 'flex', gap: 4 }}>
 						{state.speedPresets.map((speed) => {
 							const label =

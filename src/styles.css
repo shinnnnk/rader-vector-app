@@ -44,6 +44,12 @@ html, body, #root {
 	.sidebar {
 		border-top: 1px solid #1a1a1a;
 	}
+	.title-long {
+		display: none;
+	}
+	.title-short {
+		display: inline;
+	}
 }
 
 .canvas-wrap {
@@ -102,4 +108,9 @@ html, body, #root {
 	font-size: 12px;
 }
 
-
+.title-short {
+  display: none;
+}
+.title-long {
+  display: inline;
+}
