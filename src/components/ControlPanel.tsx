@@ -5,6 +5,7 @@ import { NumericKeyboard } from './NumericKeyboard'
 export interface ControlPanelProps {
 	selected: Aircraft | null
 	onHeading: (headingDeg: number) => void
+	onApproach: () => void
 	history: { timestamp: number; aircraftId: string; action: string }[]
 	mode: 'spawn' | 'command' | 'measure'
 	spawnHeadingInput: string
@@ -16,6 +17,7 @@ export interface ControlPanelProps {
 export const ControlPanel: React.FC<ControlPanelProps> = ({
 	selected,
 	onHeading,
+	onApproach,
 	history,
 	mode,
 	spawnHeadingInput,
@@ -31,7 +33,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 	const currentInputValue = mode === 'spawn' ? spawnHeadingInput : heading
 	const currentSetInputValue = mode === 'spawn' ? setSpawnHeadingInput : setHeading
 	const currentPlaceholder = mode === 'spawn' ? '生成HDG (例: 270)' : 'Heading (0-359)'
-	const currentSubmitDisabled = mode === 'spawn' ? spawnHeadingInput === '' : (!selected || heading === '')
+	const currentSubmitDisabled = mode === 'spawn' ? spawnHeadingInput === '' : !selected || heading === ''
 
 	const selTitle = useMemo(() => {
 		if (!selected) return '未選択'
@@ -47,6 +49,12 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 			// For spawn mode, the value is just set, no submit action needed here as tap on canvas triggers spawn
 		}
 		currentSetInputValue('') // Clear input after submit/action
+	}
+
+	function handleCommand(command: string) {
+		if (command === 'A' && mode === 'command' && selected) {
+			onApproach()
+		}
 	}
 
 	return (
@@ -95,6 +103,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 						currentSetInputValue('')
 						currentInputRef.current?.focus()
 					}}
+					onCommand={handleCommand}
 				/>
 			</div>
 			<div className="panel">

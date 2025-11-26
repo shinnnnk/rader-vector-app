@@ -195,7 +195,8 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 				if (hdgInt < 0) hdgInt += 360
 				const hdgDisplay = hdgInt === 0 ? 360 : hdgInt
 				const speedDisplay = ac.currentSpeedKt ? ` SPD ${String(ac.currentSpeedKt).padStart(3, '0')}` : ''
-				const label = `${ac.callsign}\nHDG ${String(hdgDisplay).padStart(3, '0')}${speedDisplay}`
+				const approachDisplay = ac.isApproaching ? ' APC' : ''
+				const label = `${ac.callsign}\nHDG ${String(hdgDisplay).padStart(3, '0')}${speedDisplay}${approachDisplay}`
 				drawLabel(ctx, p.x, p.y, label, 12 * dpr)
 			}
 

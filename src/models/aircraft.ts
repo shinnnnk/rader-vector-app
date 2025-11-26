@@ -10,13 +10,15 @@ export interface Aircraft {
 	bearingDeg: number // 北=0 時計回り
 	// 運動
 	headingDeg: number // 現在針路（真方位）
-	speedDisplay: number // 例: 36（= 360kt と解釈） - この値は初期値としてのみ使用され、速度は動的に決定される
-	currentSpeedKt?: number // 動的に計算された現在の速度
+	speedDisplay: number // This is the initial speed value, not used in dynamic calculation
+	currentSpeedKt?: number // Dynamically calculated current speed
 	altitudeH: number // “H”単位（100ft単位）
 	// 指示（ヘディングはリードターン考慮で漸近）
 	targetHeadingDeg?: number
 	turnDelaySec?: number
 	pendingAltitudeH?: number
+	// 進入モード
+	isApproaching?: boolean
 }
 
 export interface HistoryItem {
@@ -28,24 +30,96 @@ export interface HistoryItem {
 export const TICK_SEC = 4
 
 /**
- * Determines the aircraft speed in knots based on its radial distance (rNm).
- * @param rNm Radial distance from the radar center in nautical miles.
+ * Calculates speed during final approach based on distance.
+ * @param rNm - Radial distance in nautical miles.
  * @returns Speed in knots.
  */
-function getSpeedByNm(rNm: number): number {
-	if (rNm > 50) return 300 // Outside 50NM
-	if (rNm > 25) return 240 // Inside 50NM but outside 25NM
+function calculateApproachSpeed(rNm: number): number {
+	if (rNm <= 10) {
+		// Inside 10NM, reduce speed by 10kt per NM
+		return 210 - (10 - rNm) * 10
+	}
+	if (rNm <= 15) {
+		// Inside 15NM (base of the rectangle)
+		return 220
+	}
+	// Default speed when on approach but outside 15NM
+	return 230
+}
+
+/**
+ * Determines the aircraft speed in knots based on its state.
+ * @param ac - The aircraft object.
+ * @returns Speed in knots.
+ */
+function calculateCurrentSpeed(ac: Aircraft): number {
+	// On final approach course (established on 180deg heading near the centerline)
+	const isOnFinalCourse =
+		ac.isApproaching &&
+		Math.abs(shortestAngleDiffDeg(ac.headingDeg, 180)) < 5 &&
+		(ac.bearingDeg < 10 || ac.bearingDeg > 350)
+
+	if (isOnFinalCourse) {
+		return calculateApproachSpeed(ac.rNm)
+	}
+
+	// Default speed zones
+	if (ac.rNm > 50) return 300 // Outside 50NM
+	if (ac.rNm > 25) return 240 // Inside 50NM but outside 25NM
 	return 230 // Inside 25NM
 }
 
 export function advanceAircraft(ac: Aircraft): Aircraft {
-	const next: Aircraft = { ...ac }
-	// ヘディング：リードターン（指示後1秒遅延で3°/s）
+	let next: Aircraft = { ...ac }
+
+	// --- Approach Logic ---
+	if (next.isApproaching) {
+		const finalApproachCourse = 180
+		const interceptAngle = 30 // 30-degree intercept
+		const captureDistNm = 2.0 // Capture within 2.0 NM of the centerline
+
+		const xNm = next.rNm * Math.sin(degToRad(next.bearingDeg))
+		const isEastOfCourse = xNm > 0
+
+		// Check if aircraft is in a position to start the intercept turn
+		const needsIntercept =
+			// Not yet established on the final course
+			Math.abs(shortestAngleDiffDeg(next.headingDeg, finalApproachCourse)) > 1 &&
+			// And is outside the immediate centerline
+			Math.abs(xNm) > 0.5 &&
+			// And is within the capture zone
+			Math.abs(xNm) < captureDistNm
+
+		if (needsIntercept && !next.targetHeadingDeg) {
+			const interceptHeading = isEastOfCourse
+				? finalApproachCourse + interceptAngle
+				: finalApproachCourse - interceptAngle
+			next.targetHeadingDeg = normalize360(interceptHeading)
+			next.turnDelaySec = 1
+		}
+
+		// If established on intercept, check if it's time to turn to final
+		if (
+			next.targetHeadingDeg && // has an assigned heading
+			Math.abs(shortestAngleDiffDeg(next.headingDeg, next.targetHeadingDeg)) < 5 // established on intercept
+		) {
+			const shouldTurnToFinal = isEastOfCourse
+				? next.bearingDeg > 170 && next.bearingDeg < 180
+				: next.bearingDeg < 190 && next.bearingDeg > 180
+
+			if (shouldTurnToFinal || Math.abs(xNm) < 0.5) {
+				next.targetHeadingDeg = finalApproachCourse
+				next.turnDelaySec = 1
+			}
+		}
+	}
+
+	// --- Standard Movement ---
+	// Heading
 	if (typeof next.targetHeadingDeg === 'number') {
 		const rateDegPerSec = 3
 		const turnWindowSec = Math.max(0, TICK_SEC - (next.turnDelaySec ?? 0))
 		const maxDelta = rateDegPerSec * turnWindowSec
-		// 遅延消化
 		const remaining = Math.max(0, (next.turnDelaySec ?? 0) - TICK_SEC)
 		next.turnDelaySec = remaining > 0 ? remaining : 0
 
@@ -59,27 +133,25 @@ export function advanceAircraft(ac: Aircraft): Aircraft {
 			next.headingDeg = normalize360(next.headingDeg + step)
 		}
 	}
+
+	// Altitude
 	if (typeof next.pendingAltitudeH === 'number') {
-		// 段階的に変化：1H/ティック（=約1500fpm相当）
 		if (next.pendingAltitudeH > next.altitudeH) {
 			next.altitudeH += 1
 		} else if (next.pendingAltitudeH < next.altitudeH) {
 			next.altitudeH -= 1
 		}
-		// 目標到達で解除
 		if (next.altitudeH === next.pendingAltitudeH) {
 			next.pendingAltitudeH = undefined
 		}
 	}
-	// 速度→移動距離（NM）
-	const kt = getSpeedByNm(next.rNm) // 動的に速度を決定
-	next.currentSpeedKt = kt // 現在速度を更新
+
+	// Speed and Position
+	const kt = calculateCurrentSpeed(next)
+	next.currentSpeedKt = kt
 	const hours = TICK_SEC / 3600
 	const dNm = kt * hours
-	// 見かけ上：針路に沿って方位・半径を直交に変換して並進
-	// r/bearingのまま更新するより直交で更新して再変換の方が自然
 	const hdg = degToRad(next.headingDeg)
-	// 直交（北=0, 東=+）
 	let xNm = next.rNm * Math.sin(degToRad(next.bearingDeg))
 	let yNm = next.rNm * Math.cos(degToRad(next.bearingDeg))
 	xNm += dNm * Math.sin(hdg)
@@ -88,6 +160,7 @@ export function advanceAircraft(ac: Aircraft): Aircraft {
 	const bearingDeg = normalize360(radToDeg(Math.atan2(xNm, yNm)))
 	next.rNm = rNm
 	next.bearingDeg = bearingDeg
+
 	return next
 }
 

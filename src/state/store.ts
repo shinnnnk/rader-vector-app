@@ -108,7 +108,9 @@ export function useRadarState(initial: Aircraft[]) {
 		if (timerRef.current) window.clearInterval(timerRef.current)
 		const intervalMs = (TICK_SEC * 1000) / simSpeed
 		timerRef.current = window.setInterval(() => {
-			setAircraft((list) => list.map((a) => advanceAircraft(a)))
+			setAircraft((list) =>
+				list.map((a) => advanceAircraft(a)).filter((a) => a.rNm > 0.5)
+			)
 		}, intervalMs)
 		return () => {
 			if (timerRef.current) window.clearInterval(timerRef.current)
@@ -119,6 +121,13 @@ export function useRadarState(initial: Aircraft[]) {
 		() => aircraft.find((a) => a.id === selectedId) ?? null,
 		[aircraft, selectedId]
 	)
+
+	function issueApproach(id: AircraftId) {
+		setAircraft((list) =>
+			list.map((a) => (a.id === id ? { ...a, isApproaching: true } : a))
+		)
+		logHistory(id, 'APPROACH')
+	}
 
 	function issueHeading(id: AircraftId, headingDeg: number) {
 		setAircraft((list) =>
@@ -195,6 +204,7 @@ export function useRadarState(initial: Aircraft[]) {
 		simSpeed,
 		speedPresets: SPEED_PRESETS,
 		setSimSpeed,
+		issueApproach,
 		issueHeading,
 		resetAll,
 		spawnAircraftAt,
