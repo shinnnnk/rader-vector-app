@@ -9,7 +9,6 @@ export interface RadarCanvasProps {
 	aircraft: Aircraft[]
 	onTapAircraft?: (id: string) => void
 	onTapEmpty?: (rNm: number, bearingDeg: number) => void
-
 }
 
 export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraft, onTapAircraft, onTapEmpty }) => {
@@ -40,7 +39,6 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			// grid rings
 			ctx.strokeStyle = 'rgba(47,220,123,0.35)'
 			ctx.lineWidth = 1 * dpr
-			const maxR = Math.min(width, height) * 0.48
 			const steps = [0, 10, 20, 30, 40, 50]
 			for (const nm of steps) {
 				const r = nm * pxPerNm
@@ -48,6 +46,18 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 				ctx.arc(cx, cy, r, 0, Math.PI * 2)
 				ctx.stroke()
 			}
+
+			// Range labels
+			ctx.save()
+			ctx.fillStyle = 'rgba(120,170,255,0.95)'
+			ctx.font = `${10 * dpr}px ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco`
+			ctx.textAlign = 'center'
+			ctx.textBaseline = 'middle'
+			for (const nm of [15, 30, 40, 50]) {
+				const p = polarToScreen(cx, cy, nm, 180, pxPerNm)
+				ctx.fillText(String(nm), p.x, p.y + 8 * dpr)
+			}
+			ctx.restore()
 
 			// PCA overlay
 			for (let i = 1, nm = 10; nm <= 80; i++, nm += 10) {
@@ -65,42 +75,115 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			}
 			const shapeBearingNorth0 = 180
 			drawRadialRectangle(ctx, cx, cy, pxPerNm, shapeBearingNorth0, 5, 15, 2, 'rgba(120,170,255,0.8)')
+
+			// --- Modified "Baumkuchen" ---
 			const centerRadiusNm = 20
 			const thicknessNm = 5
 			const arcLengthNm = 15
 			const arcAngleDeg = (arcLengthNm / centerRadiusNm) * (180 / Math.PI)
 			const start = shapeBearingNorth0 - arcAngleDeg / 2
 			const end = shapeBearingNorth0 + arcAngleDeg / 2
-			fillAnnularSector(
-				ctx,
-				cx,
-				cy,
-				pxPerNm,
-				dpr,
-				centerRadiusNm,
-				centerRadiusNm + thicknessNm,
-				start,
-				end,
-				'rgba(120,170,255,0.12)'
-			)
+			ctx.save()
+			ctx.strokeStyle = 'rgba(120,170,255,0.8)'
+			ctx.lineWidth = 1 * dpr
+			drawArcSegment(ctx, cx, cy, pxPerNm, centerRadiusNm, start, end)
+			drawArcSegment(ctx, cx, cy, pxPerNm, centerRadiusNm + thicknessNm, start, end)
+			drawRadial(ctx, cx, cy, pxPerNm, start, centerRadiusNm, centerRadiusNm + thicknessNm)
+			drawRadial(ctx, cx, cy, pxPerNm, end, centerRadiusNm, centerRadiusNm + thicknessNm)
+
+			// "20" label inside
+			const labelPos = polarToScreen(cx, cy, centerRadiusNm + thicknessNm / 2, shapeBearingNorth0, pxPerNm)
+			ctx.fillStyle = 'rgba(120,170,255,0.95)'
+			ctx.font = `${12 * dpr}px ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco`
+			ctx.textAlign = 'center'
+			ctx.textBaseline = 'middle'
+			ctx.fillText('20', labelPos.x, labelPos.y)
+			ctx.restore()
+
 			const rectCenterNm = { x: 0, y: -((5 + 15) / 2) }
 			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 200, 20.41, dpr)
 			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 160, 20.41, dpr)
 			const offsetAnchorNm = { x: rectCenterNm.x, y: rectCenterNm.y - 2 }
 			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 210, 18.8, dpr)
 			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 150, 18.8, dpr)
-			const squareCenter = polarToScreen(cx, cy, 31, 180, pxPerNm)
+
+			// --- START: Corrected drawing logic for user request ---
+
 			const halfSquarePx = mmToCanvasPx(1, dpr) / 2
+			const triangleSize = halfSquarePx * 2.5
+			const endRadiusNm = 50
+
+			// Define start points in NM coordinates (x East, y North)
+			const southernSquareStartNm = { r: 31, b: 180 }
+			const southernSquareStartNmX = southernSquareStartNm.r * Math.sin((southernSquareStartNm.b * Math.PI) / 180)
+			const southernSquareStartNmY = southernSquareStartNm.r * Math.cos((southernSquareStartNm.b * Math.PI) / 180)
+			const southernSquareStartPointNm = { x: southernSquareStartNmX, y: southernSquareStartNmY }
+			const southernSquareCenterPt = nmToScreen(cx, cy, pxPerNm, southernSquareStartPointNm)
+
+			const point064_33_StartNm = { r: 33, b: 64 }
+			const point064_33_StartNmX = point064_33_StartNm.r * Math.sin((point064_33_StartNm.b * Math.PI) / 180)
+			const point064_33_StartNmY = point064_33_StartNm.r * Math.cos((point064_33_StartNm.b * Math.PI) / 180)
+			const point064_33_StartPointNm = { x: point064_33_StartNmX, y: point064_33_StartNmY }
+			const point064_33_Pt = nmToScreen(cx, cy, pxPerNm, point064_33_StartPointNm)
+
+			// Draw the squares at start points
 			ctx.save()
 			ctx.strokeStyle = 'rgba(255,255,255,0.95)'
 			ctx.lineWidth = 1 * dpr
 			ctx.strokeRect(
-				squareCenter.x - halfSquarePx,
-				squareCenter.y - halfSquarePx,
+				southernSquareCenterPt.x - halfSquarePx,
+				southernSquareCenterPt.y - halfSquarePx,
 				halfSquarePx * 2,
 				halfSquarePx * 2
 			)
+			ctx.strokeRect(
+				point064_33_Pt.x - halfSquarePx,
+				point064_33_Pt.y - halfSquarePx,
+				halfSquarePx * 2,
+				halfSquarePx * 2
+			)
+			// Also draw square at center
+			const centerPt = { x: cx, y: cy }
+			ctx.strokeRect(centerPt.x - halfSquarePx, centerPt.y - halfSquarePx, halfSquarePx * 2, halfSquarePx * 2)
 			ctx.restore()
+
+			// Draw line from center to 064/33 point
+			drawDashedLine(ctx, centerPt, point064_33_Pt, dpr)
+
+			// --- Lines from Southern Square ---
+			const bearingsFromSouthernSquare = [262, 129]
+			for (const bearing of bearingsFromSouthernSquare) {
+				const length = getRayCircleIntersection(southernSquareStartPointNm, bearing, endRadiusNm)
+				if (length === null) continue
+				const dir = bearingToUnitVector(bearing)
+				const endPointNm = {
+					x: southernSquareStartPointNm.x + dir.x * length,
+					y: southernSquareStartPointNm.y + dir.y * length
+				}
+				const endPt = nmToScreen(cx, cy, pxPerNm, endPointNm)
+				drawDashedLine(ctx, southernSquareCenterPt, endPt, dpr)
+				drawTriangle(ctx, endPt.x, endPt.y, triangleSize, bearing)
+			}
+			// Line from southern square to center
+			const distToCenter = Math.hypot(southernSquareStartPointNm.x, southernSquareStartPointNm.y)
+			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, southernSquareStartPointNm, 0, distToCenter, dpr)
+
+			// --- Lines from 064/33 Square ---
+			const bearingsFrom064Square = [360, 90]
+			for (const bearing of bearingsFrom064Square) {
+				const length = getRayCircleIntersection(point064_33_StartPointNm, bearing, endRadiusNm)
+				if (length === null) continue
+				const dir = bearingToUnitVector(bearing)
+				const endPointNm = {
+					x: point064_33_StartPointNm.x + dir.x * length,
+					y: point064_33_StartPointNm.y + dir.y * length
+				}
+				const endPt = nmToScreen(cx, cy, pxPerNm, endPointNm)
+				drawDashedLine(ctx, point064_33_Pt, endPt, dpr)
+				drawTriangle(ctx, endPt.x, endPt.y, triangleSize, bearing)
+			}
+
+			// --- END: Corrected drawing logic ---
 
 			// aircraft
 			for (const ac of aircraft) {
@@ -310,10 +393,10 @@ function drawAircraftIcon(
 	ctx.stroke()
 	// three short white slits behind the motion (opposite to heading), oriented perpendicular
 	const rad = (headingDeg * Math.PI) / 180
-	const ux = Math.sin(rad)        // forward x (screen coords)
-	const uy = -Math.cos(rad)       // forward y
-	const pxv = -uy                 // perpendicular x
-	const pyv = ux                  // perpendicular y
+	const ux = Math.sin(rad) // forward x (screen coords)
+	const uy = -Math.cos(rad) // forward y
+	const pxv = -uy // perpendicular x
+	const pyv = ux // perpendicular y
 	const gap = radius * 1.0
 	const len = radius * 1.4
 	ctx.strokeStyle = 'rgba(255,255,255,0.85)'
@@ -396,7 +479,7 @@ function drawRadial(
 
 function bearingToCanvasAngle(bearingDeg: number): number {
 	// Bearing(北=0,時計回り) -> Canvas角度（右=0,時計回り）
-	return ((90 - bearingDeg) * Math.PI) / 180
+	return ((bearingDeg - 90) * Math.PI) / 180
 }
 
 function drawArcSegment(
@@ -411,64 +494,111 @@ function drawArcSegment(
 	const r = rNm * pxPerNm
 	const startRad = bearingToCanvasAngle(startBearingDeg)
 	const endRad = bearingToCanvasAngle(endBearingDeg)
-	// 最短方向で描く
-	let delta = (endRad - startRad) % (Math.PI * 2)
-	if (delta < 0) delta += Math.PI * 2
-	const anticlockwise = delta > Math.PI
+
+	// 角度の正規化と最短方向の決定
+	const twoPi = Math.PI * 2
+	let delta = (endRad - startRad) % twoPi
+	if (delta < -Math.PI) delta += twoPi
+	if (delta > Math.PI) delta -= twoPi
+	const finalEndRad = startRad + delta
+
 	ctx.beginPath()
-	ctx.arc(cx, cy, r, startRad, endRad, anticlockwise)
+	ctx.arc(cx, cy, r, startRad, finalEndRad)
 	ctx.stroke()
 }
 
-function fillAnnularSector(
+function drawDashedLine(
 	ctx: CanvasRenderingContext2D,
-	cx: number,
-	cy: number,
-	pxPerNm: number,
-	dpr: number,
-	rInnerNm: number,
-	rOuterNm: number,
-	startBearingDeg: number,
-	endBearingDeg: number,
-	fillStyle: string
+	start: { x: number; y: number },
+	end: { x: number; y: number },
+	dpr: number
 ) {
-	// 数学的/Canvas角度の取り扱いで混乱しないよう、極座標→画面座標の関数を使って
-	// 方位角を直接サンプリングして多角形として塗る
-	function norm(b: number): number {
-		let v = b % 360
-		if (v < 0) v += 360
-		return v
-	}
-	const b0 = norm(startBearingDeg)
-	const b1 = norm(endBearingDeg)
-	// 進行方向は短い方（b0→b1）を採用
-	let forward = b1 - b0
-	if (forward < 0) forward += 360
-	const stepDeg = Math.max(1, Math.min(4, forward / 12)) // 分割数は最大約12セグメント
 	ctx.save()
-	ctx.fillStyle = fillStyle
+	ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+	ctx.lineWidth = 1 * dpr
+	ctx.setLineDash([4 * dpr, 4 * dpr])
 	ctx.beginPath()
-	// 外周（b0→b1）
-	for (let b = 0; b <= forward; b += stepDeg) {
-		const bearing = b0 + b
-		const p = polarToScreen(cx, cy, rOuterNm, bearing, pxPerNm)
-		if (b === 0) ctx.moveTo(p.x, p.y)
-		else ctx.lineTo(p.x, p.y)
-	}
-	// 内周（b1→b0）
-	for (let b = forward; b >= 0; b -= stepDeg) {
-		const bearing = b0 + b
-		const p = polarToScreen(cx, cy, rInnerNm, bearing, pxPerNm)
-		ctx.lineTo(p.x, p.y)
-	}
+	ctx.moveTo(start.x, start.y)
+	ctx.lineTo(end.x, end.y)
+	ctx.stroke()
+	ctx.restore()
+}
+
+function drawTriangle(
+	ctx: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	size: number,
+	rotationDeg: number
+) {
+	const h = (size * Math.sqrt(3)) / 2
+	const angleRad = (rotationDeg * Math.PI) / 180
+
+	ctx.save()
+	ctx.translate(x, y)
+	ctx.rotate(angleRad)
+	ctx.fillStyle = 'rgba(255,255,255,0.95)'
+	ctx.beginPath()
+	// Triangle points "North" (up) before rotation
+	ctx.moveTo(0, -h / 1.5)
+	ctx.lineTo(-size / 2, h / 3)
+	ctx.lineTo(size / 2, h / 3)
 	ctx.closePath()
 	ctx.fill()
 	ctx.restore()
 }
 
+/**
+ * Calculates the distance from a point along a ray to the intersection with a circle centered at the origin.
+ * @param startPtNm - The starting point of the ray, in NM coordinates {x, y} where Y is North.
+ * @param bearingDeg - The direction of the ray in degrees (bearing).
+ * @param circleRadiusNm - The radius of the circle to intersect with.
+ * @returns The distance (t) along the ray to the intersection, or null if no intersection.
+ */
+function getRayCircleIntersection(
+	startPtNm: { x: number; y: number },
+	bearingDeg: number,
+	circleRadiusNm: number
+): number | null {
+	const dir = bearingToUnitVector(bearingDeg)
+	const O = startPtNm // Ray origin
+	const D = dir // Ray direction
+	const r = circleRadiusNm
+
+	// a*t^2 + b*t + c = 0
+	const a = D.x * D.x + D.y * D.y // Should be 1 if D is a unit vector
+	const b = 2 * (O.x * D.x + O.y * D.y)
+	const c = O.x * O.x + O.y * O.y - r * r
+
+	const discriminant = b * b - 4 * a * c
+
+	if (discriminant < 0) {
+		// No intersection
+		return null
+	}
+
+	// Find the two solutions for t (distance along the ray)
+	const t1 = (-b + Math.sqrt(discriminant)) / (2 * a)
+	const t2 = (-b - Math.sqrt(discriminant)) / (2 * a)
+
+	// We want the intersection point in the forward direction of the ray, so t must be positive.
+	if (t1 > 0 && t2 > 0) {
+		return Math.min(t1, t2)
+	}
+	if (t1 > 0) {
+		return t1
+	}
+	if (t2 > 0) {
+		return t2
+	}
+	return null
+}
+
 function bearingToUnitVector(bearingDeg: number) {
 	const rad = (bearingDeg * Math.PI) / 180
-	return { x: Math.sin(rad), y: Math.cos(rad) }
+	// Convert bearing to standard angle (0 deg = East), then get vector
+	const angleRad = (90 - bearingDeg) * (Math.PI / 180)
+	return { x: Math.cos(angleRad), y: Math.sin(angleRad) }
 }
 
 function nmToScreen(
@@ -501,7 +631,7 @@ function drawDashedSegmentFromNm(
 	const startPx = nmToScreen(cx, cy, pxPerNm, startNm)
 	const endPx = nmToScreen(cx, cy, pxPerNm, endNm)
 	ctx.save()
-	ctx.strokeStyle = 'rgba(120,170,255,0.9)'
+	ctx.strokeStyle = 'rgba(255,255,255,0.9)'
 	ctx.lineWidth = 1.5 * dpr
 	ctx.setLineDash([6 * dpr, 6 * dpr])
 	ctx.beginPath()
@@ -527,19 +657,15 @@ function drawRadialRectangle(
 	halfWidthNm: number,
 	strokeStyle: string
 ) {
-	// 前方単位ベクトル（NM座標）
-	const rad = (bearingDeg * Math.PI) / 180
-	const fx = Math.sin(rad)
-	const fy = Math.cos(rad)
-	// 垂直方向単位ベクトル（NM座標）
-	const px = Math.cos(rad)
-	const py = -Math.sin(rad)
-	// 4隅（NM座標）
+	const dir = bearingToUnitVector(bearingDeg)
+	const fx = dir.x
+	const fy = dir.y
+	const px = -fy
+	const py = fx
 	const aNm = { x: fx * rStartNm + px * halfWidthNm, y: fy * rStartNm + py * halfWidthNm }
 	const bNm = { x: fx * rEndNm + px * halfWidthNm, y: fy * rEndNm + py * halfWidthNm }
 	const cNm = { x: fx * rEndNm - px * halfWidthNm, y: fy * rEndNm - py * halfWidthNm }
 	const dNm = { x: fx * rStartNm - px * halfWidthNm, y: fy * rStartNm - py * halfWidthNm }
-	// NM→画面座標
 	function toScreen(p: { x: number; y: number }) {
 		return { x: cx + p.x * pxPerNm, y: cy - p.y * pxPerNm }
 	}
@@ -547,7 +673,6 @@ function drawRadialRectangle(
 	const b = toScreen(bNm)
 	const c = toScreen(cNm)
 	const d = toScreen(dNm)
-	// 描画
 	ctx.save()
 	ctx.strokeStyle = strokeStyle
 	ctx.lineWidth = Math.max(1, Math.floor(1 * (window.devicePixelRatio || 1)))
@@ -604,12 +729,14 @@ function drawMeasureLine(
 	const midX = (start.x + current.x) / 2
 	const midY = (start.y + current.y) / 2
 	const distanceStr = distanceNm.toFixed(1)
-	const bearingStr = Math.round(bearingDeg).toString().padStart(3, '0')
+	const bearingStr = Math.round(bearingDeg)
+		.toString()
+		.padStart(3, '0')
 	const label = `${distanceStr} NM\nBRG ${bearingStr}°`
-	
+
 	ctx.fillStyle = 'rgba(0,0,0,0.7)'
 	ctx.fillRect(midX - 40 * dpr, midY - 20 * dpr, 80 * dpr, 40 * dpr)
-	
+
 	ctx.font = `${12 * dpr}px ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco`
 	ctx.fillStyle = '#ffff00'
 	ctx.textAlign = 'center'
