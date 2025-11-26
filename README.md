@@ -1,46 +1,64 @@
-## ATC Training Radar
+# ATC Training Radar
 
-開発用メモ
+ATC Training Radar is a web-based radar simulator for air traffic control training purposes.
 
-### 実行方法
-1) 依存導入（初回のみ）
-```
+これは、航空管制訓練を目的としたWebベースのレーダーシミュレーターです。
+
+## Features / 主な機能
+
+- **Aircraft Simulation**: Spawn and command aircraft on the radar screen. Each aircraft has a callsign, heading, and speed, and their movement is updated every 4 seconds.
+  - **航空機シミュレーション**: レーダー画面上で航空機を生成し、指示を与えることができます。各航空機はコールサイン、針路、速度を持ち、4秒ごとに位置が更新されます。
+- **Command & Control**:
+  - **Spawn Mode**: Click on any point on the radar to spawn a new aircraft. You can specify an initial heading.
+  - **Command Mode**: Select an aircraft and issue heading commands (0-359°). The aircraft will turn towards the new heading at a standard rate (3°/sec).
+  - **生成モード**: レーダー上の任意の点をクリックして新しい航空機をスポーンします。初期針路を指定することも可能です。
+  - **指示モード**: 航空機を選択し、針路指示（0-359°）を出します。航空機は標準的な旋回率（3°/秒）で新しい針路に向かいます。
+- **Radar Tools**:
+  - **Measurement Tool**: Measure the distance (NM) and bearing (degrees) between any two points.
+  - **Range Control**: Switch the radar range between 20 NM and 50 NM.
+  - **Simulation Speed**: Adjust the simulation speed (0.5x, 1.0x, 2.0x, 5.0x).
+  - **計測ツール**: 任意の2点間の距離（NM）と方位（度）を計測できます。
+  - **レンジ切替**: レーダーの表示範囲を20NMと50NMで切り替えられます。
+  - **シミュレーション速度**: シミュレーションの速度を調整できます（0.5x, 1.0x, 2.0x, 5.0x）。
+- **Special Overlays**: Displays various overlays for training purposes, such as concentric circles and other shapes for PCA (Pre-duty Check Assistance).
+  - **特殊オーバーレイ**: PCA（職務前チェック補助）のための同心円や特定の図形など、訓練目的の様々なオーバーレイを表示します。
+- **PWA Support**: Can be installed as a Progressive Web App for offline use.
+  - **PWA対応**: プログレッシブウェブアプリとしてインストールし、オフラインでも使用できます。
+
+## How to Use / 使い方
+
+1.  **Select Mode**: Choose a mode from the top bar: `生成` (Spawn), `指示` (Command), or `計測` (Measure).
+    - **モード選択**: 上部バーから`生成`、`指示`、`計測`のいずれかのモードを選択します。
+2.  **Spawn Aircraft**: In `生成` mode, click anywhere on the radar to spawn an aircraft. You can set an initial heading in the "生成HDG" input field on the right.
+    - **航空機の生成**: `生成`モードで、レーダー上をクリックして航空機をスポーンします。右側の「生成HDG」入力欄で初期針路を設定できます。
+3.  **Issue Commands**: In `指示` mode, click on an aircraft to select it. Then, use the numeric keypad on the right to input a heading and press the `指示` button.
+    - **指示の発行**: `指示`モードで、航空機をクリックして選択します。その後、右側のテンキーで針路を入力し、「指示」ボタンを押します。
+4.  **Measure**: In `計測` mode, click and drag on the radar to measure distance and bearing.
+    - **計測**: `計測`モードで、レーダー上をドラッグして距離と方位を計測します。
+
+## Development / 開発
+
+This project is built with React, TypeScript, and Vite.
+
+### Setup
+
+Install the dependencies:
+```bash
 npm install
 ```
-2) 開発サーバ
-```
+
+### Running the Development Server
+
+To start the development server, run:
+```bash
 npm run dev
 ```
-3) ビルド
-```
+This will open the application in your browser.
+
+### Building for Production
+
+To create a production build, run:
+```bash
 npm run build
 ```
-
-### 機能
-- 固定表示レーダー（スイープなし）、10NMリング、20/50 NM切替
-- **モード切替**: 生成 / 指示 / 計測 の3モードを独立したボタンで切替
-- 生成モードではレーダー上の任意地点をクリックして航空機をスポーン（コールサインは指定リストからランダム生成）
-- トップバー右側の「生成HDG」欄に角度を入力すると、スポーン時の初期針路を任意指定（未入力時はスポーン方位と同じ）
-- 指示モードでは機体クリックで選択、右パネルからヘディング指示（0–359°）を送出
-- 4秒ごとに全機を更新（針路・速度・高度）。ヘディングはリードターン対応（指示後1秒遅延・3°/s）
-- 進行方向に2NMのヘディングライン表示、航空機ラベルは「コールサイン」「HDG ddd」
-- **再生速度**: 0.5x / 1.0x / 2.0x / 5.0x のシミュレーション速度ボタンを搭載
-- **計測機能**: 任意の2点間の距離（NM）と方位（度）を計測可能。計測線は手を離した後も表示され、「計測クリア」ボタンで消去
-- 操作履歴を保持
-- PCA用オーバーレイ（同心円、南向き長方形、バウムクーヘン型、指定方位の点線、南側マーカー正方形）を描画
-- PWA: `manifest.webmanifest` と簡易 `sw.js`
-
-### 使い方
-1. `npm run dev` でブラウザを開く。
-2. トップバー左側で `生成` モードを選び、必要であれば右側の「生成HDG」に初期針路 (0–359) を入力してからレーダー上の空白をクリックして機体をスポーン。  
-   - コールサインは例: `ANA123`、`KLM456` のように自動付与され、スポーン直後は自動で選択状態になります。
-3. ヘディング指示を行う際はトップバーの `指示` モードに切り替え、対象機をクリックしてから右パネルで `Heading (0–359)` を入力し「指示」ボタンを押します。  
-   - ヘディングは指示後1秒で旋回開始、3°/秒で最短角度へ追従します。  
-   - ラベルの `HDG ddd` は指示値を表示します（000は360として表示）。
-4. 操作履歴パネルに最新200件までの指示/スポーンログが表示されます。
-5. **計測機能**: トップバーの `計測` モードに切り替え、レーダー上でドラッグして距離/方位を表示。`計測クリア` ボタンで測線を消去、`指示` など別モードに戻すと計測はリセットされます。
-6. トップバー右側で 20NM / 50NM のレンジ切替、`リセット`、および 0.5x〜5x の速度ボタンを使用してシナリオを調整できます。  
-   - `リセット` は機体・履歴の全消去とレンジ20NMへの戻しを行います。
-
-
-
+The output files will be generated in the `dist` directory.
