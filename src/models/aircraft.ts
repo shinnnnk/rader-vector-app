@@ -10,7 +10,8 @@ export interface Aircraft {
 	bearingDeg: number // 北=0 時計回り
 	// 運動
 	headingDeg: number // 現在針路（真方位）
-	speedDisplay: number // 例: 36（= 360kt と解釈）
+	speedDisplay: number // 例: 36（= 360kt と解釈） - この値は初期値としてのみ使用され、速度は動的に決定される
+	currentSpeedKt?: number // 動的に計算された現在の速度
 	altitudeH: number // “H”単位（100ft単位）
 	// 指示（ヘディングはリードターン考慮で漸近）
 	targetHeadingDeg?: number
@@ -26,9 +27,15 @@ export interface HistoryItem {
 
 export const TICK_SEC = 4
 
-// 速度解釈: “36” -> 360kt
-export function displayToKt(speedDisplay: number): number {
-	return speedDisplay * 10
+/**
+ * Determines the aircraft speed in knots based on its radial distance (rNm).
+ * @param rNm Radial distance from the radar center in nautical miles.
+ * @returns Speed in knots.
+ */
+function getSpeedByNm(rNm: number): number {
+	if (rNm > 50) return 300 // Outside 50NM
+	if (rNm > 25) return 240 // Inside 50NM but outside 25NM
+	return 230 // Inside 25NM
 }
 
 export function advanceAircraft(ac: Aircraft): Aircraft {
@@ -65,7 +72,8 @@ export function advanceAircraft(ac: Aircraft): Aircraft {
 		}
 	}
 	// 速度→移動距離（NM）
-	const kt = displayToKt(next.speedDisplay)
+	const kt = getSpeedByNm(next.rNm) // 動的に速度を決定
+	next.currentSpeedKt = kt // 現在速度を更新
 	const hours = TICK_SEC / 3600
 	const dNm = kt * hours
 	// 見かけ上：針路に沿って方位・半径を直交に変換して並進
