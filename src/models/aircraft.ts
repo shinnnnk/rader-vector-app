@@ -76,39 +76,27 @@ export function advanceAircraft(ac: Aircraft): Aircraft {
 	// --- Approach Logic ---
 	if (next.isApproaching) {
 		const finalApproachCourse = 360
-		const interceptAngle = 30 // 30-degree intercept
-		const captureDistNm = 2.0 // Capture within 2.0 NM of the centerline
 
-		const xNm = next.rNm * Math.sin(degToRad(next.bearingDeg))
-		const isEastOfCourse = xNm > 0
+		// This block decides if it's time to turn to the final course.
+		// It should only run if the aircraft is not already turning to final or established on it.
+		const isEstablished = Math.abs(shortestAngleDiffDeg(next.headingDeg, finalApproachCourse)) < 1
+		const isTurningToFinal = next.targetHeadingDeg === finalApproachCourse
 
-		// Check if aircraft is in a position to start the intercept turn
-		const needsIntercept =
-			// Not yet established on the final course
-			Math.abs(shortestAngleDiffDeg(next.headingDeg, finalApproachCourse)) > 1 &&
-			// And is outside the immediate centerline
-			Math.abs(xNm) > 0.5 &&
-			// And is within the capture zone
-			Math.abs(xNm) < captureDistNm
+		if (!isEstablished && !isTurningToFinal) {
+			const kt = calculateCurrentSpeed(next)
+			// Estimate turn radius in NM based on speed. The formula R = V / (60 * PI) is used.
+			const turnRadiusNm = kt / 188.5
 
-		if (needsIntercept && !next.targetHeadingDeg) {
-			const interceptHeading = isEastOfCourse
-				? finalApproachCourse + interceptAngle
-				: finalApproachCourse - interceptAngle
-			next.targetHeadingDeg = normalize360(interceptHeading)
-			next.turnDelaySec = 1
-		}
+			// Calculate the current intercept angle from the current heading.
+			const interceptAngle = shortestAngleDiffDeg(next.headingDeg, finalApproachCourse)
 
-		// If established on intercept, check if it's time to turn to final
-		if (
-			next.targetHeadingDeg && // has an assigned heading
-			Math.abs(shortestAngleDiffDeg(next.headingDeg, next.targetHeadingDeg)) < 5 // established on intercept
-		) {
-			const shouldTurnToFinal = isEastOfCourse
-				? next.bearingDeg > 170 && next.bearingDeg < 180
-				: next.bearingDeg < 190 && next.bearingDeg > 180
+			// Calculate the lead distance required to start the turn and roll out on the centerline.
+			const turnLeadDistNm = turnRadiusNm * Math.abs(Math.sin(degToRad(interceptAngle)))
 
-			if (shouldTurnToFinal || Math.abs(xNm) < 0.5) {
+			const xNm = next.rNm * Math.sin(degToRad(next.bearingDeg))
+
+			// When the aircraft's distance to the centerline is less than or equal to the calculated lead distance, start the turn.
+			if (Math.abs(xNm) <= turnLeadDistNm) {
 				next.targetHeadingDeg = finalApproachCourse
 				next.turnDelaySec = 1
 			}
