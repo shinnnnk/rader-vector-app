@@ -53,11 +53,12 @@ function calculateApproachSpeed(rNm: number): number {
  * @returns Speed in knots.
  */
 function calculateCurrentSpeed(ac: Aircraft): number {
-	// On final approach course (established on 180deg heading near the centerline)
+	// On final approach course (established on 360deg heading near the southern centerline)
 	const isOnFinalCourse =
 		ac.isApproaching &&
-		Math.abs(shortestAngleDiffDeg(ac.headingDeg, 180)) < 5 &&
-		(ac.bearingDeg < 10 || ac.bearingDeg > 350)
+		Math.abs(shortestAngleDiffDeg(ac.headingDeg, 360)) < 5 &&
+		ac.bearingDeg > 170 &&
+		ac.bearingDeg < 190
 
 	if (isOnFinalCourse) {
 		return calculateApproachSpeed(ac.rNm)
@@ -74,7 +75,7 @@ export function advanceAircraft(ac: Aircraft): Aircraft {
 
 	// --- Approach Logic ---
 	if (next.isApproaching) {
-		const finalApproachCourse = 180
+		const finalApproachCourse = 360
 		const interceptAngle = 30 // 30-degree intercept
 		const captureDistNm = 2.0 // Capture within 2.0 NM of the centerline
 
@@ -156,6 +157,16 @@ export function advanceAircraft(ac: Aircraft): Aircraft {
 	let yNm = next.rNm * Math.cos(degToRad(next.bearingDeg))
 	xNm += dNm * Math.sin(hdg)
 	yNm += dNm * Math.cos(hdg)
+
+	// --- Snap to centerline logic ---
+	// If the aircraft is established on the final heading, force it onto the centerline.
+	const isOnFinalHeading =
+		next.isApproaching && Math.abs(shortestAngleDiffDeg(next.headingDeg, 360)) < 1.0
+
+	if (isOnFinalHeading) {
+		xNm = 0
+	}
+
 	const rNm = Math.hypot(xNm, yNm)
 	const bearingDeg = normalize360(radToDeg(Math.atan2(xNm, yNm)))
 	next.rNm = rNm
