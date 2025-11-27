@@ -88,15 +88,17 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 						value={currentInputValue}
 						onChange={(e) => currentSetInputValue(e.target.value)}
 					/>
-					<button onClick={submitHeadingOrSpawn} disabled={currentSubmitDisabled}>
-						{mode === 'spawn' ? '適用' : '指示'}
-					</button>
+					{mode !== 'spawn' && (
+						<button onClick={submitHeadingOrSpawn} disabled={currentSubmitDisabled}>
+							指示
+						</button>
+					)}
 				</div>
 			</div>
 			<div className="panel" style={{ paddingTop: 8 }}>
 				<NumericKeyboard
 					onDigit={(digit) => {
-						currentSetInputValue((prev) => prev + digit)
+						currentSetInputValue((prev) => (prev.length >= 3 ? prev : prev + digit))
 						currentInputRef.current?.focus()
 					}}
 					onClear={() => {
