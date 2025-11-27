@@ -109,7 +109,7 @@ export function useRadarState(initial: Aircraft[]) {
 		const intervalMs = (TICK_SEC * 1000) / simSpeed
 		timerRef.current = window.setInterval(() => {
 			setAircraft((list) =>
-				list.map((a) => advanceAircraft(a)).filter((a) => !a.isApproaching || a.rNm > 1.0)
+				list.map((a) => advanceAircraft(a)).filter((a) => !a.isApproaching || a.rNm > 2.0)
 			)
 		}, intervalMs)
 		return () => {

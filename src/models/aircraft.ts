@@ -157,16 +157,6 @@ export function advanceAircraft(ac: Aircraft): Aircraft {
 	let yNm = next.rNm * Math.cos(degToRad(next.bearingDeg))
 	xNm += dNm * Math.sin(hdg)
 	yNm += dNm * Math.cos(hdg)
-
-	// --- Snap to centerline logic ---
-	// If the aircraft is established on the final heading, force it onto the centerline.
-	const isOnFinalHeading =
-		next.isApproaching && Math.abs(shortestAngleDiffDeg(next.headingDeg, 360)) < 1.0
-
-	if (isOnFinalHeading) {
-		xNm = 0
-	}
-
 	const rNm = Math.hypot(xNm, yNm)
 	const bearingDeg = normalize360(radToDeg(Math.atan2(xNm, yNm)))
 	next.rNm = rNm
