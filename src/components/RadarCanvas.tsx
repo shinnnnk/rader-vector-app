@@ -183,6 +183,129 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 				drawTriangle(ctx, endPt.x, endPt.y, triangleSize, bearing)
 			}
 
+			// --- NEW: User requested features ---
+			// 1. 中心から111°/38NMに白色点線 + 正三角形
+			const point111_38_StartNm = { r: 38, b: 111 }
+			const point111_38_StartNmX = point111_38_StartNm.r * Math.sin((point111_38_StartNm.b * Math.PI) / 180)
+			const point111_38_StartNmY = point111_38_StartNm.r * Math.cos((point111_38_StartNm.b * Math.PI) / 180)
+			const point111_38_StartPointNm = { x: point111_38_StartNmX, y: point111_38_StartNmY }
+			const point111_38_Pt = nmToScreen(cx, cy, pxPerNm, point111_38_StartPointNm)
+
+			// 中心から111°/38NMへの点線
+			drawDashedLine(ctx, centerPt, point111_38_Pt, dpr)
+			// 111°/38NM地点に正三角形
+			drawTriangle(ctx, point111_38_Pt.x, point111_38_Pt.y, triangleSize, 111)
+
+			// 111°/38NM地点から180°方向に50NM円上へ点線 + 正三角形
+			const bearing111_180 = 180
+			const length111_180 = getRayCircleIntersection(point111_38_StartPointNm, bearing111_180, endRadiusNm)
+			if (length111_180 !== null) {
+				const dir111_180 = bearingToUnitVector(bearing111_180)
+				const endPointNm111_180 = {
+					x: point111_38_StartPointNm.x + dir111_180.x * length111_180,
+					y: point111_38_StartPointNm.y + dir111_180.y * length111_180
+				}
+				const endPt111_180 = nmToScreen(cx, cy, pxPerNm, endPointNm111_180)
+				drawDashedLine(ctx, point111_38_Pt, endPt111_180, dpr)
+				drawTriangle(ctx, endPt111_180.x, endPt111_180.y, triangleSize, bearing111_180)
+			}
+
+			// 111°/38NM地点から050°方向に50NM円上へ点線 + 正三角形
+			const bearing111_050 = 50
+			const length111_050 = getRayCircleIntersection(point111_38_StartPointNm, bearing111_050, endRadiusNm)
+			if (length111_050 !== null) {
+				const dir111_050 = bearingToUnitVector(bearing111_050)
+				const endPointNm111_050 = {
+					x: point111_38_StartPointNm.x + dir111_050.x * length111_050,
+					y: point111_38_StartPointNm.y + dir111_050.y * length111_050
+				}
+				const endPt111_050 = nmToScreen(cx, cy, pxPerNm, endPointNm111_050)
+				drawDashedLine(ctx, point111_38_Pt, endPt111_050, dpr)
+				drawTriangle(ctx, endPt111_050.x, endPt111_050.y, triangleSize, bearing111_050)
+			}
+
+			// 2. 中心から308°/20NMに白色点線 + 正方形
+			const point308_20_StartNm = { r: 20, b: 308 }
+			const point308_20_StartNmX = point308_20_StartNm.r * Math.sin((point308_20_StartNm.b * Math.PI) / 180)
+			const point308_20_StartNmY = point308_20_StartNm.r * Math.cos((point308_20_StartNm.b * Math.PI) / 180)
+			const point308_20_StartPointNm = { x: point308_20_StartNmX, y: point308_20_StartNmY }
+			const point308_20_Pt = nmToScreen(cx, cy, pxPerNm, point308_20_StartPointNm)
+
+			// 中心から308°/20NMへの点線
+			drawDashedLine(ctx, centerPt, point308_20_Pt, dpr)
+			// 308°/20NM地点に正方形
+			ctx.save()
+			ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+			ctx.lineWidth = 1 * dpr
+			ctx.strokeRect(
+				point308_20_Pt.x - halfSquarePx,
+				point308_20_Pt.y - halfSquarePx,
+				halfSquarePx * 2,
+				halfSquarePx * 2
+			)
+			ctx.restore()
+
+			// 308°/20NM地点から040°方向に50NM円上へ点線 + 正三角形
+			const bearing308_040 = 40
+			const length308_040 = getRayCircleIntersection(point308_20_StartPointNm, bearing308_040, endRadiusNm)
+			if (length308_040 !== null) {
+				const dir308_040 = bearingToUnitVector(bearing308_040)
+				const endPointNm308_040 = {
+					x: point308_20_StartPointNm.x + dir308_040.x * length308_040,
+					y: point308_20_StartPointNm.y + dir308_040.y * length308_040
+				}
+				const endPt308_040 = nmToScreen(cx, cy, pxPerNm, endPointNm308_040)
+				drawDashedLine(ctx, point308_20_Pt, endPt308_040, dpr)
+				drawTriangle(ctx, endPt308_040.x, endPt308_040.y, triangleSize, bearing308_040)
+			}
+
+			// 308°/20NM地点から220°方向に50NM円上へ点線 + 正三角形
+			const bearing308_220 = 220
+			const length308_220 = getRayCircleIntersection(point308_20_StartPointNm, bearing308_220, endRadiusNm)
+			if (length308_220 !== null) {
+				const dir308_220 = bearingToUnitVector(bearing308_220)
+				const endPointNm308_220 = {
+					x: point308_20_StartPointNm.x + dir308_220.x * length308_220,
+					y: point308_20_StartPointNm.y + dir308_220.y * length308_220
+				}
+				const endPt308_220 = nmToScreen(cx, cy, pxPerNm, endPointNm308_220)
+				drawDashedLine(ctx, point308_20_Pt, endPt308_220, dpr)
+				drawTriangle(ctx, endPt308_220.x, endPt308_220.y, triangleSize, bearing308_220)
+			}
+
+			// --- ADDITIONAL: 東側正方形から212°/39NM + 円弧 ---
+			// 64°/33NMの正方形（東側30NM付近）から212°方向に39NMの点線
+			const bearing064_212 = 212
+			const dir064_212 = bearingToUnitVector(bearing064_212)
+			const endPointNm064_212 = {
+				x: point064_33_StartPointNm.x + dir064_212.x * 39,
+				y: point064_33_StartPointNm.y + dir064_212.y * 39
+			}
+			const endPt064_212 = nmToScreen(cx, cy, pxPerNm, endPointNm064_212)
+
+			// 点線を描画
+			drawDashedLine(ctx, point064_33_Pt, endPt064_212, dpr)
+			// 終点に正三角形
+			drawTriangle(ctx, endPt064_212.x, endPt064_212.y, triangleSize, bearing064_212)
+
+			// 上記正三角形と中心から16NMの地点を円弧で結ぶ
+			// 中心から16NMの地点を計算（正三角形の方向から逆算）
+			const endPointNm064_212_R = Math.hypot(endPointNm064_212.x, endPointNm064_212.y)
+			const endPointNm064_212_Bearing = Math.atan2(endPointNm064_212.x, endPointNm064_212.y) * (180 / Math.PI)
+			const normalizedBearing = endPointNm064_212_Bearing < 0 ? endPointNm064_212_Bearing + 360 : endPointNm064_212_Bearing
+
+			// 中心から16NMの地点（正三角形と同じ方位線上）
+			const point16Nm_StartNm = { r: 16, b: normalizedBearing }
+			const point16Nm_StartNmX = point16Nm_StartNm.r * Math.sin((point16Nm_StartNm.b * Math.PI) / 180)
+			const point16Nm_StartNmY = point16Nm_StartNm.r * Math.cos((point16Nm_StartNm.b * Math.PI) / 180)
+			const point16Nm_StartPointNm = { x: point16Nm_StartNmX, y: point16Nm_StartNmY }
+			const point16Nm_Pt = nmToScreen(cx, cy, pxPerNm, point16Nm_StartPointNm)
+
+			// 2点を結ぶ円弧を描画（中点を中心とする円弧）
+			drawArcBetweenPoints(ctx, point16Nm_Pt, endPt064_212, dpr)
+
+			// --- END: User requested features ---
+
 			// --- END: Corrected drawing logic ---
 
 			// aircraft
@@ -749,6 +872,41 @@ function drawMeasureLine(
 	})
 	ctx.textAlign = 'left'
 	ctx.textBaseline = 'alphabetic'
+	ctx.restore()
+}
+
+function drawArcBetweenPoints(
+	ctx: CanvasRenderingContext2D,
+	point1: { x: number; y: number },
+	point2: { x: number; y: number },
+	dpr: number
+) {
+	// 2点を結ぶ円弧を描画（2点の中点を通る円弧）
+	const dx = point2.x - point1.x
+	const dy = point2.y - point1.y
+	const distance = Math.hypot(dx, dy)
+
+	// 2点の中点
+	const midX = (point1.x + point2.x) / 2
+	const midY = (point1.y + point2.y) / 2
+
+	// 円弧の半径を距離の60%とする（適度なカーブ）
+	const radius = distance * 0.6
+
+	// 2点間の角度
+	const angle = Math.atan2(dy, dx)
+
+	// 制御点を中点から垂直方向にオフセット
+	const controlX = midX - Math.sin(angle) * (distance * 0.2)
+	const controlY = midY + Math.cos(angle) * (distance * 0.2)
+
+	ctx.save()
+	ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+	ctx.lineWidth = 1 * dpr
+	ctx.beginPath()
+	ctx.moveTo(point1.x, point1.y)
+	ctx.quadraticCurveTo(controlX, controlY, point2.x, point2.y)
+	ctx.stroke()
 	ctx.restore()
 }
 
