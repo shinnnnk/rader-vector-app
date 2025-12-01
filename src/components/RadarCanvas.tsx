@@ -9,15 +9,17 @@ export interface RadarCanvasProps {
 	aircraft: Aircraft[]
 	onTapAircraft?: (id: string) => void
 	onTapEmpty?: (rNm: number, bearingDeg: number) => void
+	onRangeChange?: (rangeNm: RangeNm) => void
 }
 
-export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraft, onTapAircraft, onTapEmpty }) => {
+export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraft, onTapAircraft, onTapEmpty, onRangeChange }) => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
 	const containerRef = useRef<HTMLDivElement | null>(null)
 	const dpr = useMemo(() => window.devicePixelRatio || 1, [])
 	const [measureStart, setMeasureStart] = useState<{ x: number; y: number } | null>(null)
 	const [measureCurrent, setMeasureCurrent] = useState<{ x: number; y: number } | null>(null)
 	const isDraggingRef = useRef(false)
+	const lastPinchDistanceRef = useRef<number | null>(null)
 
 	const draw = useMemo(
 		() => () => {
@@ -53,7 +55,13 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			ctx.font = `${10 * dpr}px ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco`
 			ctx.textAlign = 'center'
 			ctx.textBaseline = 'middle'
-			for (const nm of [15, 30, 40, 50]) {
+			// 30NM labels (left and right sides)
+			for (const bearing of [90, 270]) {
+				const p = polarToScreen(cx, cy, 30, bearing, pxPerNm)
+				ctx.fillText('30', p.x, p.y)
+			}
+			// 40NM and 50NM labels (bottom)
+			for (const nm of [40, 50]) {
 				const p = polarToScreen(cx, cy, nm, 180, pxPerNm)
 				ctx.fillText(String(nm), p.x, p.y + 8 * dpr)
 			}
@@ -436,8 +444,12 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 		if (!el) return
 
 		const handleTouchStart = (ev: TouchEvent) => {
-			if (mode !== 'measure') return
-			if (ev.touches.length === 1) {
+			if (ev.touches.length === 2) {
+				// Pinch zoom
+				const dx = ev.touches[0].clientX - ev.touches[1].clientX
+				const dy = ev.touches[0].clientY - ev.touches[1].clientY
+				lastPinchDistanceRef.current = Math.hypot(dx, dy)
+			} else if (mode === 'measure' && ev.touches.length === 1) {
 				const point = getCanvasPoint(ev)
 				if (!point) return
 				setMeasureStart(point)
@@ -447,8 +459,22 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 		}
 
 		const handleTouchMove = (ev: TouchEvent) => {
-			if (mode !== 'measure' || !isDraggingRef.current) return
-			if (ev.touches.length === 1) {
+			if (ev.touches.length === 2 && onRangeChange) {
+				// Pinch zoom
+				ev.preventDefault()
+				const dx = ev.touches[0].clientX - ev.touches[1].clientX
+				const dy = ev.touches[0].clientY - ev.touches[1].clientY
+				const currentDistance = Math.hypot(dx, dy)
+
+				if (lastPinchDistanceRef.current !== null) {
+					const scale = lastPinchDistanceRef.current / currentDistance
+					const newRangeNm = Math.max(10, Math.min(50, Math.round(rangeNm * scale / 10) * 10)) as RangeNm
+					if (newRangeNm !== rangeNm) {
+						onRangeChange(newRangeNm)
+					}
+				}
+				lastPinchDistanceRef.current = currentDistance
+			} else if (mode === 'measure' && isDraggingRef.current && ev.touches.length === 1) {
 				ev.preventDefault()
 				const point = getCanvasPoint(ev)
 				if (!point) return
@@ -460,6 +486,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			if (isDraggingRef.current) {
 				isDraggingRef.current = false
 			}
+			lastPinchDistanceRef.current = null
 		}
 
 		el.addEventListener('touchstart', handleTouchStart)
@@ -473,7 +500,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			el.removeEventListener('touchend', handleTouchEnd)
 			el.removeEventListener('touchcancel', handleTouchEnd)
 		}
-	}, [getCanvasPoint, mode])
+	}, [getCanvasPoint, mode, onRangeChange, rangeNm])
 
 	// モード変更時に計測をリセット
 	useEffect(() => {

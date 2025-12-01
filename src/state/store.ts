@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Aircraft, AircraftId, HistoryItem, TICK_SEC, advanceAircraft } from '../models/aircraft'
+import { RangeNm } from '../utils/coordinates'
 
 const CALLSIGN_PREFIXES = [
 	'ADO',
@@ -89,7 +90,7 @@ function generateCallsign(existingAircraft: Aircraft[]): string {
 }
 
 export function useRadarState(initial: Aircraft[]) {
-	const [rangeNm, setRangeNm] = useState<50>(50)
+	const [rangeNm, setRangeNm] = useState<RangeNm>(50)
 	const [mode, setMode] = useState<RadarMode>('spawn')
 	const [aircraft, setAircraft] = useState<Aircraft[]>(initial)
 	const [selectedId, setSelectedId] = useState<AircraftId | null>(null)
