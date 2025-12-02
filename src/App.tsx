@@ -53,6 +53,8 @@ export const App: React.FC = () => {
 					</button>
 
 					<button onClick={state.resetAll}>Reset</button>
+					<button onClick={state.zoomOut}>Zoom Out</button>
+					<button onClick={state.zoomIn}>Zoom In</button>
 					<div style={{ marginLeft: 16, display: 'flex', gap: 4 }}>
 						{state.speedPresets.map((speed) => {
 							const label =

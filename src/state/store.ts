@@ -73,6 +73,8 @@ export type RadarMode = 'spawn' | 'command' | 'measure'
 const SPEED_PRESETS = [0.5, 1, 2, 5] as const
 export type SimSpeed = (typeof SPEED_PRESETS)[number]
 
+const ZOOM_LEVELS = [25, 50, 75, 100] as const;
+
 let callsignSeq = 1;
 function generateCallsign(existingAircraft: Aircraft[]): string {
 	const maxAttempts = 10
@@ -89,7 +91,7 @@ function generateCallsign(existingAircraft: Aircraft[]): string {
 }
 
 export function useRadarState(initial: Aircraft[]) {
-	const [rangeNm, setRangeNm] = useState<50>(50)
+	const [rangeNm, setRangeNm] = useState<number>(50)
 	const [mode, setMode] = useState<RadarMode>('spawn')
 	const [aircraft, setAircraft] = useState<Aircraft[]>(initial)
 	const [selectedId, setSelectedId] = useState<AircraftId | null>(null)
@@ -128,6 +130,26 @@ export function useRadarState(initial: Aircraft[]) {
 
 	function togglePause() {
 		setIsPaused((p) => !p)
+	}
+
+	function zoomIn() {
+		setRangeNm(prevRange => {
+			const currentIndex = ZOOM_LEVELS.indexOf(prevRange as typeof ZOOM_LEVELS[number]);
+			if (currentIndex > 0) {
+				return ZOOM_LEVELS[currentIndex - 1];
+			}
+			return prevRange;
+		});
+	}
+
+	function zoomOut() {
+		setRangeNm(prevRange => {
+			const currentIndex = ZOOM_LEVELS.indexOf(prevRange as typeof ZOOM_LEVELS[number]);
+			if (currentIndex < ZOOM_LEVELS.length - 1) {
+				return ZOOM_LEVELS[currentIndex + 1];
+			}
+			return prevRange;
+		});
 	}
 
 	function issueApproach(id: AircraftId) {
@@ -200,7 +222,8 @@ export function useRadarState(initial: Aircraft[]) {
 
 	return {
 		rangeNm,
-		setRangeNm,
+		zoomIn,
+		zoomOut,
 		mode,
 		setMode,
 		aircraft,
