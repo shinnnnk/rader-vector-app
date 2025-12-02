@@ -47,35 +47,35 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 				ctx.stroke()
 			}
 
-			// Range labels
+			// Speed labels (飛行速度の凡例)
 			ctx.save()
 			ctx.fillStyle = 'rgba(120,170,255,0.95)'
 			ctx.font = `${10 * dpr}px ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco`
 			ctx.textAlign = 'center'
 			ctx.textBaseline = 'middle'
-			// 15NM: 225°
-			const p15 = polarToScreen(cx, cy, 15, 225, pxPerNm)
-			ctx.fillText('15', p15.x, p15.y)
-			// 30NM: 120°と240°
-			const p30_1 = polarToScreen(cx, cy, 30, 120, pxPerNm)
-			ctx.fillText('30', p30_1.x, p30_1.y)
-			const p30_2 = polarToScreen(cx, cy, 30, 240, pxPerNm)
-			ctx.fillText('30', p30_2.x, p30_2.y)
-			// 35NM: 10°
-			const p35 = polarToScreen(cx, cy, 35, 10, pxPerNm)
-			ctx.fillText('35', p35.x, p35.y)
-			// 40NM: 190°
-			const p40 = polarToScreen(cx, cy, 40, 190, pxPerNm)
-			ctx.fillText('40', p40.x, p40.y)
-			// 50NM: 190°
-			const p50 = polarToScreen(cx, cy, 50, 190, pxPerNm)
-			ctx.fillText('50', p50.x, p50.y)
-			// 60NM: 315°
-			const p60 = polarToScreen(cx, cy, 60, 315, pxPerNm)
-			ctx.fillText('60', p60.x, p60.y)
-			// 70NM: 50°
-			const p70 = polarToScreen(cx, cy, 70, 50, pxPerNm)
-			ctx.fillText('70', p70.x, p70.y)
+			// 速度15: 15NM円上の225°位置に配置
+			const pSpeed15 = polarToScreen(cx, cy, 15, 225, pxPerNm)
+			ctx.fillText('15', pSpeed15.x, pSpeed15.y)
+			// 速度30: 25NM円上の120°と240°位置に配置（内側の真ん中あたり）
+			const pSpeed30_1 = polarToScreen(cx, cy, 25, 120, pxPerNm)
+			ctx.fillText('30', pSpeed30_1.x, pSpeed30_1.y)
+			const pSpeed30_2 = polarToScreen(cx, cy, 25, 240, pxPerNm)
+			ctx.fillText('30', pSpeed30_2.x, pSpeed30_2.y)
+			// 速度35: 17NM円上の10°位置に配置
+			const pSpeed35 = polarToScreen(cx, cy, 17, 10, pxPerNm)
+			ctx.fillText('35', pSpeed35.x, pSpeed35.y)
+			// 速度40: 32NM円上の197°位置に配置
+			const pSpeed40 = polarToScreen(cx, cy, 32, 197, pxPerNm)
+			ctx.fillText('40', pSpeed40.x, pSpeed40.y)
+			// 速度50: 45NM円上の190°位置に配置
+			const pSpeed50 = polarToScreen(cx, cy, 45, 190, pxPerNm)
+			ctx.fillText('50', pSpeed50.x, pSpeed50.y)
+			// 速度60: 45NM円上の315°位置に配置
+			const pSpeed60 = polarToScreen(cx, cy, 45, 315, pxPerNm)
+			ctx.fillText('60', pSpeed60.x, pSpeed60.y)
+			// 速度70: 37NM円上の63°位置に配置
+			const pSpeed70 = polarToScreen(cx, cy, 37, 63, pxPerNm)
+			ctx.fillText('70', pSpeed70.x, pSpeed70.y)
 			ctx.restore()
 
 			// PCA overlay
