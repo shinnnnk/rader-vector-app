@@ -4,6 +4,8 @@ import { NumericKeyboard } from './NumericKeyboard'
 
 export interface ControlPanelProps {
 	selected: Aircraft | null
+	isPaused: boolean
+	togglePause: () => void
 	onHeading: (headingDeg: number) => void
 	onApproach: () => void
 	history: { timestamp: number; aircraftId: string; action: string }[]
@@ -16,6 +18,8 @@ export interface ControlPanelProps {
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({
 	selected,
+	isPaused,
+	togglePause,
 	onHeading,
 	onApproach,
 	history,
@@ -69,6 +73,11 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 				</ul>
 			</div>
 			<div className="panel">
+				<div className="row">
+					<button onClick={togglePause} style={{ width: '100%', fontWeight: 'bold' }}>
+						{isPaused ? '▶ 再開' : '❚❚ 一時停止'}
+					</button>
+				</div>
 				{mode === 'spawn' ? (
 					<div className="row" style={{ justifyContent: 'space-between' }}>
 						<div>次の航空機</div>

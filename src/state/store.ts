@@ -95,6 +95,7 @@ export function useRadarState(initial: Aircraft[]) {
 	const [selectedId, setSelectedId] = useState<AircraftId | null>(null)
 	const [history, setHistory] = useState<HistoryItem[]>([])
 	const [simSpeed, setSimSpeed] = useState<SimSpeed>(1)
+	const [isPaused, setIsPaused] = useState<boolean>(false)
 	const [nextCallsign, setNextCallsign] = useState<string>('')
 	const timerRef = useRef<number | null>(null)
 	const initialRef = useRef<Aircraft[]>(initial)
@@ -103,9 +104,12 @@ export function useRadarState(initial: Aircraft[]) {
 		setNextCallsign(generateCallsign(initial))
 	}, [initial])
 
-	// 4秒ごと更新（速度倍率に応じて間隔を調整）
+	// 4秒ごと更新（速度倍率・一時停止に応じて間隔を調整）
 	useEffect(() => {
 		if (timerRef.current) window.clearInterval(timerRef.current)
+		if (isPaused) {
+			return // Do nothing if paused
+		}
 		const intervalMs = (TICK_SEC * 1000) / simSpeed
 		timerRef.current = window.setInterval(() => {
 			setAircraft((list) =>
@@ -115,12 +119,16 @@ export function useRadarState(initial: Aircraft[]) {
 		return () => {
 			if (timerRef.current) window.clearInterval(timerRef.current)
 		}
-	}, [simSpeed])
+	}, [simSpeed, isPaused])
 
 	const selected = useMemo(
 		() => aircraft.find((a) => a.id === selectedId) ?? null,
 		[aircraft, selectedId]
 	)
+
+	function togglePause() {
+		setIsPaused((p) => !p)
+	}
 
 	function issueApproach(id: AircraftId) {
 		setAircraft((list) =>
@@ -204,6 +212,8 @@ export function useRadarState(initial: Aircraft[]) {
 		simSpeed,
 		speedPresets: SPEED_PRESETS,
 		setSimSpeed,
+		isPaused,
+		togglePause,
 		issueApproach,
 		issueHeading,
 		resetAll,

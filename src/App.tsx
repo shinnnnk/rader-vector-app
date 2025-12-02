@@ -91,6 +91,8 @@ export const App: React.FC = () => {
 				/>
 				<ControlPanel
 					selected={state.selected}
+					isPaused={state.isPaused}
+					togglePause={state.togglePause}
 					onHeading={(hdg) => state.selected && state.issueHeading(state.selected.id, hdg)}
 					onApproach={() => state.selected && state.issueApproach(state.selected.id)}
 					history={state.history}
