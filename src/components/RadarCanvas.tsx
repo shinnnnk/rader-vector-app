@@ -98,7 +98,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			// --- Modified "Baumkuchen" ---
 			const centerRadiusNm = 20
 			const thicknessNm = 5
-			const arcLengthNm = 15
+			const arcLengthNm = 20
 			const arcAngleDeg = (arcLengthNm / centerRadiusNm) * (180 / Math.PI)
 			const start = shapeBearingNorth0 - arcAngleDeg / 2
 			const end = shapeBearingNorth0 + arcAngleDeg / 2
@@ -110,8 +110,8 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			drawRadial(ctx, cx, cy, pxPerNm, start, centerRadiusNm, centerRadiusNm + thicknessNm)
 			drawRadial(ctx, cx, cy, pxPerNm, end, centerRadiusNm, centerRadiusNm + thicknessNm)
 
-			// "20" label inside
-			const labelPos = polarToScreen(cx, cy, centerRadiusNm + thicknessNm / 2, shapeBearingNorth0, pxPerNm)
+			// "20" label inside (右側にずらす)
+			const labelPos = polarToScreen(cx, cy, centerRadiusNm + thicknessNm / 2, shapeBearingNorth0 - 5, pxPerNm)
 			ctx.fillStyle = 'rgba(120,170,255,0.95)'
 			ctx.font = `${12 * dpr}px ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco`
 			ctx.textAlign = 'center'
