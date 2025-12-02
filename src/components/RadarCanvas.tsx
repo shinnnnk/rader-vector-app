@@ -281,7 +281,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			const point180_16_Pt = nmToScreen(cx, cy, pxPerNm, point180_16_StartPointNm)
 
 			// 2点を結ぶ円弧を描画
-			drawArcBetweenPoints(ctx, point180_16_Pt, endPt064_212, dpr)
+			drawArcBetweenPoints(ctx, point180_16_Pt, endPt064_212, dpr, cx)
 
 			// --- END: User requested features ---
 
@@ -891,30 +891,28 @@ function drawArcBetweenPoints(
 	ctx: CanvasRenderingContext2D,
 	point1: { x: number; y: number },
 	point2: { x: number; y: number },
-	dpr: number
+	dpr: number,
+	cx: number
 ) {
-	// 2点を結ぶ円弧を描画（2点の中点を通る円弧）
+	// 2点を結ぶ円弧を描画
 	const dx = point2.x - point1.x
 	const dy = point2.y - point1.y
 	const distance = Math.hypot(dx, dy)
 
 	// 2点の中点
-	const midX = (point1.x + point2.x) / 2
 	const midY = (point1.y + point2.y) / 2
-
-	// 円弧の半径を距離の60%とする（適度なカーブ）
-	const radius = distance * 0.6
 
 	// 2点間の角度
 	const angle = Math.atan2(dy, dx)
 
-	// 制御点を中点から垂直方向にオフセット
-	const controlX = midX - Math.sin(angle) * (distance * 0.2)
-	const controlY = midY + Math.cos(angle) * (distance * 0.2)
+	// 制御点を画面の垂直中心線上に配置し、カーブの膨らみを調整
+	const controlX = cx
+	const controlY = midY + Math.cos(angle) * (distance * 0.7) // User's value
 
 	ctx.save()
 	ctx.strokeStyle = 'rgba(255,255,255,0.95)'
 	ctx.lineWidth = 1 * dpr
+	ctx.setLineDash([4 * dpr, 4 * dpr])
 	ctx.beginPath()
 	ctx.moveTo(point1.x, point1.y)
 	ctx.quadraticCurveTo(controlX, controlY, point2.x, point2.y)
