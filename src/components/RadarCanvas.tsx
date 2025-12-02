@@ -15,6 +15,8 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
 	const containerRef = useRef<HTMLDivElement | null>(null)
 	const dpr = useMemo(() => window.devicePixelRatio || 1, [])
+	const halfSquarePx = mmToCanvasPx(1, dpr) / 2
+	const triangleSize = halfSquarePx * 2.5
 	const [measureStart, setMeasureStart] = useState<{ x: number; y: number } | null>(null)
 	const [measureCurrent, setMeasureCurrent] = useState<{ x: number; y: number } | null>(null)
 	const isDraggingRef = useRef(false)
@@ -95,6 +97,16 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			const shapeBearingNorth0 = 180
 			drawRadialRectangle(ctx, cx, cy, pxPerNm, shapeBearingNorth0, 5, 15, 2, 'rgba(120,170,255,0.8)')
 
+			// --- START: Triangles in and around Southern Rectangle ---
+			const southernRectCenterPt = polarToScreen(cx, cy, 10, 180, pxPerNm)
+			const southernRectAboveCenterPt = polarToScreen(cx, cy, 8, 180, pxPerNm)
+			const southernRectBottomCenterPt = polarToScreen(cx, cy, 15, 180, pxPerNm)
+
+			drawTriangle(ctx, southernRectCenterPt.x, southernRectCenterPt.y, triangleSize, 0) // Pointing up
+			drawTriangle(ctx, southernRectAboveCenterPt.x, southernRectAboveCenterPt.y, triangleSize, 0) // Pointing up
+			drawTriangle(ctx, southernRectBottomCenterPt.x, southernRectBottomCenterPt.y, triangleSize, 0) // Pointing up
+			// --- END: Triangles in and around Southern Rectangle ---
+
 			// --- Modified "Baumkuchen" ---
 			const centerRadiusNm = 20
 			const thicknessNm = 5
@@ -127,9 +139,6 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 150, 18.8, dpr)
 
 			// --- START: Corrected drawing logic for user request ---
-
-			const halfSquarePx = mmToCanvasPx(1, dpr) / 2
-			const triangleSize = halfSquarePx * 2.5
 			const endRadiusNm = 50
 
 			// Define start points in NM coordinates (x East, y North)
@@ -297,7 +306,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 				drawMeasureLine(ctx, measureStart, measureCurrent, cx, cy, pxPerNm, dpr)
 			}
 		},
-		[aircraft, dpr, measureCurrent, measureStart, mode, rangeNm]
+		[aircraft, dpr, measureCurrent, measureStart, mode, rangeNm, triangleSize, halfSquarePx]
 	)
 
 	useEffect(() => {
@@ -642,6 +651,11 @@ function drawTriangle(
 	ctx.restore()
 }
 
+function mmToCanvasPx(mm: number, dpr: number) {
+	const cssPxPerMm = 96 / 25.4
+	return mm * cssPxPerMm * dpr
+}
+
 /**
  * Calculates the distance from a point along a ray to the intersection with a circle centered at the origin.
  * @param startPtNm - The starting point of the ray, in NM coordinates {x, y} where Y is North.
@@ -751,11 +765,6 @@ function drawDashedSegmentFromNm(
 	ctx.lineTo(endPx.x, endPx.y)
 	ctx.stroke()
 	ctx.restore()
-}
-
-function mmToCanvasPx(mm: number, dpr: number) {
-	const cssPxPerMm = 96 / 25.4
-	return mm * cssPxPerMm * dpr
 }
 
 function drawRadialRectangle(
