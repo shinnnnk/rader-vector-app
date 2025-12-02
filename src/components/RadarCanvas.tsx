@@ -290,7 +290,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			for (const ac of aircraft) {
 				const p = polarToScreen(cx, cy, ac.rNm, ac.bearingDeg, pxPerNm)
 				drawAircraftIcon(ctx, p.x, p.y, 4 * dpr, ac.headingDeg)
-				drawHeadingLine(ctx, p.x, p.y, ac.headingDeg, pxPerNm * 2)
+				drawHeadingLine(ctx, p.x, p.y, ac.headingDeg, pxPerNm * 3)
 				const hdg = typeof ac.targetHeadingDeg === 'number' ? ac.targetHeadingDeg : ac.headingDeg
 				let hdgInt = Math.round(hdg) % 360
 				if (hdgInt < 0) hdgInt += 360
@@ -298,7 +298,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 				const speedDisplay = ac.currentSpeedKt ? ` SPD ${String(Math.floor(ac.currentSpeedKt / 10))}${Math.random() < 0.5 ? 'H' : 'M'}` : ''
 				const approachDisplay = ac.isApproaching ? ' APC' : ''
 				const label = `${ac.callsign}\nHDG ${String(hdgDisplay).padStart(3, '0')}${speedDisplay}${approachDisplay}`
-				drawLabel(ctx, p.x, p.y, label, 12 * dpr)
+				drawLabel(ctx, p.x, p.y, label, 12 * dpr, ac.headingDeg)
 			}
 
 			// measure line
@@ -524,17 +524,31 @@ function drawLabel(
 	x: number,
 	y: number,
 	text: string,
-	fontSize: number
+	fontSize: number,
+	headingDeg: number
 ) {
-	const offsetX = 14
-	const offsetY = -14
-	const lines = text.split('\n')
+	const offsetX = 14 // Base horizontal distance from icon center
+	const offsetY = -14 // Vertical offset for the top of the label block
+
 	ctx.save()
 	ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco`
 	ctx.fillStyle = '#ffffff'
+	const lines = text.split('\n')
+
+	let finalOffsetX = offsetX
+	// Default alignment is 'left', drawing text to the right of the anchor point
+	ctx.textAlign = 'left'
+
+	// If heading is generally to the right (between North-East and South-East),
+	// flip the label to the left side to avoid the heading line.
+	if (headingDeg > 15 && headingDeg < 165) {
+		ctx.textAlign = 'right'
+		finalOffsetX = -offsetX
+	}
+
 	let ty = y + offsetY
 	for (const line of lines) {
-		ctx.fillText(line, x + offsetX, ty)
+		ctx.fillText(line, x + finalOffsetX, ty)
 		ty += fontSize + 2
 	}
 	ctx.restore()
