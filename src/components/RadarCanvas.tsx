@@ -169,40 +169,11 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			// Draw line from center to 064/33 point
 			drawDashedLine(ctx, centerPt, point064_33_Pt, dpr)
 
-			// --- Lines from Southern Square ---
-			const bearingsFromSouthernSquare = [262, 129]
-			for (const bearing of bearingsFromSouthernSquare) {
-				const length = getRayCircleIntersection(southernSquareStartPointNm, bearing, endRadiusNm)
-				if (length === null) continue
-				const dir = bearingToUnitVector(bearing)
-				const endPointNm = {
-					x: southernSquareStartPointNm.x + dir.x * length,
-					y: southernSquareStartPointNm.y + dir.y * length
-				}
-				const endPt = nmToScreen(cx, cy, pxPerNm, endPointNm)
-				drawDashedLine(ctx, southernSquareCenterPt, endPt, dpr)
-				drawTriangle(ctx, endPt.x, endPt.y, triangleSize, bearing)
-			}
 			// Line from southern square to center
 			const distToCenter = Math.hypot(southernSquareStartPointNm.x, southernSquareStartPointNm.y)
 			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, southernSquareStartPointNm, 0, distToCenter, dpr)
 
-			// --- Lines from 064/33 Square ---
-			const bearingsFrom064Square = [360, 90]
-			for (const bearing of bearingsFrom064Square) {
-				const length = getRayCircleIntersection(point064_33_StartPointNm, bearing, endRadiusNm)
-				if (length === null) continue
-				const dir = bearingToUnitVector(bearing)
-				const endPointNm = {
-					x: point064_33_StartPointNm.x + dir.x * length,
-					y: point064_33_StartPointNm.y + dir.y * length
-				}
-				const endPt = nmToScreen(cx, cy, pxPerNm, endPointNm)
-				drawDashedLine(ctx, point064_33_Pt, endPt, dpr)
-				drawTriangle(ctx, endPt.x, endPt.y, triangleSize, bearing)
-			}
-
-			// --- NEW: User requested features ---
+			// --- NEW: User requested features (non-extended lines) ---
 			// 1. 中心から111°/38NMに白色点線 + 正三角形
 			const point111_38_StartNm = { r: 38, b: 111 }
 			const point111_38_StartNmX = point111_38_StartNm.r * Math.sin((point111_38_StartNm.b * Math.PI) / 180)
@@ -214,34 +185,6 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			drawDashedLine(ctx, centerPt, point111_38_Pt, dpr)
 			// 111°/38NM地点に正三角形
 			drawTriangle(ctx, point111_38_Pt.x, point111_38_Pt.y, triangleSize, 111)
-
-			// 111°/38NM地点から180°方向に50NM円上へ点線 + 正三角形
-			const bearing111_180 = 180
-			const length111_180 = getRayCircleIntersection(point111_38_StartPointNm, bearing111_180, endRadiusNm)
-			if (length111_180 !== null) {
-				const dir111_180 = bearingToUnitVector(bearing111_180)
-				const endPointNm111_180 = {
-					x: point111_38_StartPointNm.x + dir111_180.x * length111_180,
-					y: point111_38_StartPointNm.y + dir111_180.y * length111_180
-				}
-				const endPt111_180 = nmToScreen(cx, cy, pxPerNm, endPointNm111_180)
-				drawDashedLine(ctx, point111_38_Pt, endPt111_180, dpr)
-				drawTriangle(ctx, endPt111_180.x, endPt111_180.y, triangleSize, bearing111_180)
-			}
-
-			// 111°/38NM地点から050°方向に50NM円上へ点線 + 正三角形
-			const bearing111_050 = 50
-			const length111_050 = getRayCircleIntersection(point111_38_StartPointNm, bearing111_050, endRadiusNm)
-			if (length111_050 !== null) {
-				const dir111_050 = bearingToUnitVector(bearing111_050)
-				const endPointNm111_050 = {
-					x: point111_38_StartPointNm.x + dir111_050.x * length111_050,
-					y: point111_38_StartPointNm.y + dir111_050.y * length111_050
-				}
-				const endPt111_050 = nmToScreen(cx, cy, pxPerNm, endPointNm111_050)
-				drawDashedLine(ctx, point111_38_Pt, endPt111_050, dpr)
-				drawTriangle(ctx, endPt111_050.x, endPt111_050.y, triangleSize, bearing111_050)
-			}
 
 			// 2. 中心から308°/20NMに白色点線 + 正方形
 			const point308_20_StartNm = { r: 20, b: 308 }
@@ -264,33 +207,45 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			)
 			ctx.restore()
 
-			// 308°/20NM地点から040°方向に50NM円上へ点線 + 正三角形
-			const bearing308_040 = 40
-			const length308_040 = getRayCircleIntersection(point308_20_StartPointNm, bearing308_040, endRadiusNm)
-			if (length308_040 !== null) {
-				const dir308_040 = bearingToUnitVector(bearing308_040)
-				const endPointNm308_040 = {
-					x: point308_20_StartPointNm.x + dir308_040.x * length308_040,
-					y: point308_20_StartPointNm.y + dir308_040.y * length308_040
-				}
-				const endPt308_040 = nmToScreen(cx, cy, pxPerNm, endPointNm308_040)
-				drawDashedLine(ctx, point308_20_Pt, endPt308_040, dpr)
-				drawTriangle(ctx, endPt308_040.x, endPt308_040.y, triangleSize, bearing308_040)
-			}
+			// --- START: User-defined intersection logic ---
+			const lines = [
+				/* 1 */ { startNm: point308_20_StartPointNm, bearing: 40, startPx: point308_20_Pt },
+				/* 2 */ { startNm: point111_38_StartPointNm, bearing: 50, startPx: point111_38_Pt },
+				/* 3 */ { startNm: point064_33_StartPointNm, bearing: 90, startPx: point064_33_Pt },
+				/* 4 */ { startNm: southernSquareStartPointNm, bearing: 129, startPx: southernSquareCenterPt },
+				/* 5 */ { startNm: point111_38_StartPointNm, bearing: 180, startPx: point111_38_Pt },
+				/* 6 */ { startNm: point308_20_StartPointNm, bearing: 220, startPx: point308_20_Pt },
+				/* 7 */ { startNm: southernSquareStartPointNm, bearing: 262, startPx: southernSquareCenterPt },
+				/* 8 */ { startNm: point064_33_StartPointNm, bearing: 360, startPx: point064_33_Pt }
+			].map(line => ({ ...line, dir: bearingToUnitVector(line.bearing) }))
 
-			// 308°/20NM地点から220°方向に50NM円上へ点線 + 正三角形
-			const bearing308_220 = 220
-			const length308_220 = getRayCircleIntersection(point308_20_StartPointNm, bearing308_220, endRadiusNm)
-			if (length308_220 !== null) {
-				const dir308_220 = bearingToUnitVector(bearing308_220)
-				const endPointNm308_220 = {
-					x: point308_20_StartPointNm.x + dir308_220.x * length308_220,
-					y: point308_20_StartPointNm.y + dir308_220.y * length308_220
+			const pairs = [
+				{ line1: lines[0], line2: lines[7] }, // 1 and 8
+				{ line1: lines[2], line2: lines[1] }, // 3 and 2
+				{ line1: lines[4], line2: lines[3] }, // 5 and 4
+				{ line1: lines[6], line2: lines[5] } // 7 and 6
+			]
+
+			for (const pair of pairs) {
+				const intersectionNm = findLineIntersection(
+					pair.line1.startNm,
+					pair.line1.dir,
+					pair.line2.startNm,
+					pair.line2.dir
+				)
+
+				if (intersectionNm) {
+					const intersectionPx = nmToScreen(cx, cy, pxPerNm, intersectionNm)
+
+					// Draw the two lines extending to the intersection
+					drawDashedLine(ctx, pair.line1.startPx, intersectionPx, dpr)
+					drawDashedLine(ctx, pair.line2.startPx, intersectionPx, dpr)
+
+					// Draw one triangle at the intersection point, using the first line's bearing
+					drawTriangle(ctx, intersectionPx.x, intersectionPx.y, triangleSize, pair.line1.bearing)
 				}
-				const endPt308_220 = nmToScreen(cx, cy, pxPerNm, endPointNm308_220)
-				drawDashedLine(ctx, point308_20_Pt, endPt308_220, dpr)
-				drawTriangle(ctx, endPt308_220.x, endPt308_220.y, triangleSize, bearing308_220)
 			}
+			// --- END: User-defined intersection logic ---
 
 			// --- ADDITIONAL: 東側正方形から212°/39NM + 円弧 ---
 			// 64°/33NMの正方形（東側30NM付近）から212°方向に39NMの点線
@@ -731,6 +686,24 @@ function getRayCircleIntersection(
 		return t2
 	}
 	return null
+}
+
+function findLineIntersection(
+	p1: { x: number; y: number },
+	d1: { x: number; y: number },
+	p2: { x: number; y: number },
+	d2: { x: number; y: number }
+): { x: number; y: number } | null {
+	const det = d1.x * d2.y - d1.y * d2.x
+	if (Math.abs(det) < 1e-9) {
+		// Lines are parallel
+		return null
+	}
+	const t = ((p2.x - p1.x) * d2.y - (p2.y - p1.y) * d2.x) / det
+	return {
+		x: p1.x + t * d1.x,
+		y: p1.y + t * d1.y
+	}
 }
 
 function bearingToUnitVector(bearingDeg: number) {
