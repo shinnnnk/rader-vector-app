@@ -288,21 +288,16 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			// 終点に正三角形
 			drawTriangle(ctx, endPt064_212.x, endPt064_212.y, triangleSize, bearing064_212)
 
-			// 上記正三角形と中心から16NMの地点を円弧で結ぶ
-			// 中心から16NMの地点を計算（正三角形の方向から逆算）
-			const endPointNm064_212_R = Math.hypot(endPointNm064_212.x, endPointNm064_212.y)
-			const endPointNm064_212_Bearing = Math.atan2(endPointNm064_212.x, endPointNm064_212.y) * (180 / Math.PI)
-			const normalizedBearing = endPointNm064_212_Bearing < 0 ? endPointNm064_212_Bearing + 360 : endPointNm064_212_Bearing
+			// 上記正三角形と中心から180°方向16NMの地点を円弧で結ぶ
+			// 中心から180°方向16NMの地点
+			const point180_16_StartNm = { r: 16, b: 180 }
+			const point180_16_StartNmX = point180_16_StartNm.r * Math.sin((point180_16_StartNm.b * Math.PI) / 180)
+			const point180_16_StartNmY = point180_16_StartNm.r * Math.cos((point180_16_StartNm.b * Math.PI) / 180)
+			const point180_16_StartPointNm = { x: point180_16_StartNmX, y: point180_16_StartNmY }
+			const point180_16_Pt = nmToScreen(cx, cy, pxPerNm, point180_16_StartPointNm)
 
-			// 中心から16NMの地点（正三角形と同じ方位線上）
-			const point16Nm_StartNm = { r: 16, b: normalizedBearing }
-			const point16Nm_StartNmX = point16Nm_StartNm.r * Math.sin((point16Nm_StartNm.b * Math.PI) / 180)
-			const point16Nm_StartNmY = point16Nm_StartNm.r * Math.cos((point16Nm_StartNm.b * Math.PI) / 180)
-			const point16Nm_StartPointNm = { x: point16Nm_StartNmX, y: point16Nm_StartNmY }
-			const point16Nm_Pt = nmToScreen(cx, cy, pxPerNm, point16Nm_StartPointNm)
-
-			// 2点を結ぶ円弧を描画（中点を中心とする円弧）
-			drawArcBetweenPoints(ctx, point16Nm_Pt, endPt064_212, dpr)
+			// 2点を結ぶ円弧を描画
+			drawArcBetweenPoints(ctx, point180_16_Pt, endPt064_212, dpr)
 
 			// --- END: User requested features ---
 
