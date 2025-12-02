@@ -110,7 +110,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			// --- Modified "Baumkuchen" ---
 			const centerRadiusNm = 20
 			const thicknessNm = 5
-			const arcLengthNm = 20
+			const arcLengthNm = 17.74 // Adjusted to meet constraint of 11nm/310deg to rect corner
 			const arcAngleDeg = (arcLengthNm / centerRadiusNm) * (180 / Math.PI)
 			const start = shapeBearingNorth0 - arcAngleDeg / 2
 			const end = shapeBearingNorth0 + arcAngleDeg / 2
