@@ -1,4 +1,4 @@
-export type RangeNm = 10 | 20 | 30 | 40 | 50
+export type RangeNm = 50
 
 export function computePxPerNm(viewW: number, viewH: number, rangeNm: RangeNm): number {
 	const radiusPx = Math.min(viewW, viewH) * 0.48

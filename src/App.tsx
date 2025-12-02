@@ -88,7 +88,6 @@ export const App: React.FC = () => {
 							parsedSpawnHeading === 360 ? 0 : parsedSpawnHeading ?? undefined
 						)
 					}
-					onRangeChange={state.setRangeNm}
 				/>
 				<ControlPanel
 					selected={state.selected}
