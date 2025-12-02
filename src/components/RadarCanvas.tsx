@@ -132,11 +132,12 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			ctx.restore()
 
 			const rectCenterNm = { x: 0, y: -((5 + 15) / 2) }
-			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 200, 20.41, dpr)
-			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 160, 20.41, dpr)
+			const blueColor = 'rgba(60,120,255,0.95)' // Define blue color for consistency
+			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 200, 20.41, dpr, blueColor)
+			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, rectCenterNm, 160, 20.41, dpr, blueColor)
 			const offsetAnchorNm = { x: rectCenterNm.x, y: rectCenterNm.y - 2 }
-			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 210, 18.8, dpr)
-			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 150, 18.8, dpr)
+			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 210, 18.8, dpr, blueColor)
+			drawDashedSegmentFromNm(ctx, cx, cy, pxPerNm, offsetAnchorNm, 150, 18.8, dpr, blueColor)
 
 			// --- START: Corrected drawing logic for user request ---
 			const endRadiusNm = 50
@@ -761,7 +762,8 @@ function drawDashedSegmentFromNm(
 	startNm: { x: number; y: number },
 	bearingDeg: number,
 	lengthNm: number,
-	dpr: number
+	dpr: number,
+	color: string = 'rgba(255,255,255,0.9)'
 ) {
 	const dir = bearingToUnitVector(bearingDeg)
 	const endNm = {
@@ -771,9 +773,9 @@ function drawDashedSegmentFromNm(
 	const startPx = nmToScreen(cx, cy, pxPerNm, startNm)
 	const endPx = nmToScreen(cx, cy, pxPerNm, endNm)
 	ctx.save()
-	ctx.strokeStyle = 'rgba(255,255,255,0.9)'
-	ctx.lineWidth = 1.5 * dpr
-	ctx.setLineDash([6 * dpr, 6 * dpr])
+	ctx.strokeStyle = color
+	ctx.lineWidth = 1 * dpr
+	ctx.setLineDash([4 * dpr, 4 * dpr])
 	ctx.beginPath()
 	ctx.moveTo(startPx.x, startPx.y)
 	ctx.lineTo(endPx.x, endPx.y)
