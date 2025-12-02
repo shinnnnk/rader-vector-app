@@ -53,10 +53,29 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			ctx.font = `${10 * dpr}px ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco`
 			ctx.textAlign = 'center'
 			ctx.textBaseline = 'middle'
-			for (const nm of [15, 30, 40, 50]) {
-				const p = polarToScreen(cx, cy, nm, 180, pxPerNm)
-				ctx.fillText(String(nm), p.x, p.y + 8 * dpr)
-			}
+			// 15NM: 225°
+			const p15 = polarToScreen(cx, cy, 15, 225, pxPerNm)
+			ctx.fillText('15', p15.x, p15.y)
+			// 30NM: 120°と240°
+			const p30_1 = polarToScreen(cx, cy, 30, 120, pxPerNm)
+			ctx.fillText('30', p30_1.x, p30_1.y)
+			const p30_2 = polarToScreen(cx, cy, 30, 240, pxPerNm)
+			ctx.fillText('30', p30_2.x, p30_2.y)
+			// 35NM: 10°
+			const p35 = polarToScreen(cx, cy, 35, 10, pxPerNm)
+			ctx.fillText('35', p35.x, p35.y)
+			// 40NM: 190°
+			const p40 = polarToScreen(cx, cy, 40, 190, pxPerNm)
+			ctx.fillText('40', p40.x, p40.y)
+			// 50NM: 190°
+			const p50 = polarToScreen(cx, cy, 50, 190, pxPerNm)
+			ctx.fillText('50', p50.x, p50.y)
+			// 60NM: 315°
+			const p60 = polarToScreen(cx, cy, 60, 315, pxPerNm)
+			ctx.fillText('60', p60.x, p60.y)
+			// 70NM: 50°
+			const p70 = polarToScreen(cx, cy, 70, 50, pxPerNm)
+			ctx.fillText('70', p70.x, p70.y)
 			ctx.restore()
 
 			// PCA overlay
