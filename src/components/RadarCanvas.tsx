@@ -290,7 +290,7 @@ export const RadarCanvas: React.FC<RadarCanvasProps> = ({ rangeNm, mode, aircraf
 			// aircraft
 			for (const ac of aircraft) {
 				const p = polarToScreen(cx, cy, ac.rNm, ac.bearingDeg, pxPerNm)
-				drawAircraftIcon(ctx, p.x, p.y, 4 * dpr, ac.headingDeg)
+				drawAircraftIcon(ctx, p.x, p.y, pxPerNm / 3, ac.headingDeg)
 				drawHeadingLine(ctx, p.x, p.y, ac.headingDeg, pxPerNm * 3)
 				const hdg = typeof ac.targetHeadingDeg === 'number' ? ac.targetHeadingDeg : ac.headingDeg
 				let hdgInt = Math.round(hdg) % 360
