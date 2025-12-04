@@ -1,77 +1,74 @@
 # ATC Training Radar
 
-ATC Training Radar is a web-based radar simulator designed for air traffic control training. It allows users to spawn, monitor, and command aircraft in a simulated radar environment.
+航空管制訓練を目的として設計されたWebベースのレーダーシミュレーターです。ユーザーはシミュレートされたレーダー環境で、航空機の生成、監視、および指示を行うことができます。
 
-これは、航空管制訓練を目的として設計されたWebベースのレーダーシミュレーターです。ユーザーはシミュレートされたレーダー環境で、航空機の生成、監視、および指示を行うことができます。
+## 主な機能
 
-## Features / 主な機能
+- **航空機シミュレーション**: 航空機を生成し、指示を与えます。各航空機はユニークなコールサイン、針路、速度を持ち、その位置はリアルタイムで更新されます。
+- **操作モード**:
+  - **`生成`モード**: レーダー上の任意の点をクリックして新しい航空機をスポーンします。初期針路の指定も可能です。
+  - **`指示`モード**: 航空機を選択し、針路指示（0-360°）を出します。航空機は標準旋回率で新しい針路に向かいます。
+  - **`計測`モード**: クリック＆ドラッグで、レーダー上の2点間の距離（海里）と方位を計測します。
+- **レーダーツールと表示**:
+  - **シミュレーション速度**: シミュレーションの速度を調整できます（0.5x, 1x, 2x, 5x）。
+  - **訓練用オーバーレイ**: 同心円のレンジリングやプロシージャ訓練用のカスタム図形など、さまざまなオーバーレイを表示します。
+  - **PWA対応**: プログレッシブウェブアプリとしてインストールでき、ネイティブアプリのような体験やオフラインでの利用が可能です。
 
-- **Aircraft Simulation**: Spawn and command aircraft. Each aircraft has a unique callsign, heading, and speed, with its position updated in real-time.
-  - **航空機シミュレーション**: 航空機を生成し、指示を与えます。各航空機はユニークなコールサイン、針路、速度を持ち、その位置はリアルタイムで更新されます。
-- **Command & Control Modes**:
-  - **`生成` (Spawn) Mode**: Click on any point on the radar to spawn a new aircraft. An initial heading can be specified.
-  - **`指示` (Command) Mode**: Select an aircraft and issue heading commands (0-360°). The aircraft will turn towards the new heading at a standard rate.
-  - **`計測` (Measure) Mode**: Click and drag to measure the distance (in nautical miles) and bearing between any two points on the radar.
-  - **各操作モード**:
-    - **`生成`モード**: レーダー上の任意の点をクリックして新しい航空機をスポーンします。初期針路の指定も可能です。
-    - **`指示`モード**: 航空機を選択し、針路指示（0-360°）を出します。航空機は標準旋回率で新しい針路に向かいます。
-    - **`計測`モード**: クリック＆ドラッグで、レーダー上の2点間の距離（海里）と方位を計測します。
-- **Radar Tools & Display**:
-  - **Simulation Speed Control**: Adjust the simulation speed (0.5x, 1x, 2x, 5x).
-  - **Training Overlays**: Displays various overlays for training purposes, such as concentric range rings and custom shapes for procedural training.
-  - **PWA Support**: Can be installed as a Progressive Web App for a native-like experience and offline availability.
-  - **レーダーツールと表示**:
-    - **シミュレーション速度**: シミュレーションの速度を調整できます（0.5x, 1x, 2x, 5x）。
-    - **訓練用オーバーレイ**: 同心円のレンジリングやプロシージャ訓練用のカスタム図形など、さまざまなオーバーレイを表示します。
-    - **PWA対応**: プログレッシブウェブアプリとしてインストールでき、ネイティブアプリのような体験やオフラインでの利用が可能です。
+## 航空機の速度ロジック
 
-## How to Use / 使い方
+航空機の速度は、その位置と状態に基づいて動的に計算されます。
 
-1.  **Select Mode**: Choose a mode from the top bar: `生成` (Spawn), `指示` (Command), or `計測` (Measure).
-    - **モード選択**: 上部バーから`生成`、`指示`、`計測`のいずれかのモードを選択します。
-2.  **Spawn Aircraft**: In `生成` mode, click anywhere on the radar. You can set an initial heading in the "生成HDG" input field in the control panel on the right.
-    - **航空機の生成**: `生成`モードで、レーダー上をクリックします。右側のコントロールパネルにある「生成HDG」入力欄で初期針路を設定できます。
-3.  **Issue Commands**: In `指示` mode, click an aircraft to select it. Use the numeric keypad in the control panel to input a heading and press the `指示` button.
-    - **指示の発行**: `指示`モードで、航空機をクリックして選択します。コントロールパネルのテンキーで針路を入力し、「指示」ボタンを押します。
-4.  **Measure**: In `計測` mode, click and drag on the radar to measure distance and bearing.
-    - **計測**: `計測`モードで、レーダー上をドラッグして距離と方位を計測します。
+-   **通常速度:**
+    -   50海里圏外: 300ノット
+    -   50海里～25海里: 240ノット
+    -   25海里圏内: 230ノット
 
-## Technology Stack / 技術スタック
+-   **進入速度:** 航空機が最終進入を行っている場合（`isApproaching` がtrueで、最終進入コースに沿っている場合）:
+    -   15海里圏外: 230ノット
+    -   15海里～10海里: 220ノット
+    -   10海里圏内: 10海里地点の210ノットから速度が線形に減少します。計算式は `210 - (10 - rNm) * 10` です。
 
-This project is built with a modern, lean web technology stack.
+## 使い方
 
--   **Frontend**: [React](https://react.dev/) with [TypeScript](https://www.typescriptlang.org/)
--   **Build Tool**: [Vite](https://vitejs.dev/)
--   **State Management**: Implemented using React's built-in hooks (`useState`, `useContext`, `useReducer`) encapsulated in a custom `useRadarState` hook, which centralizes all application logic.
--   **Rendering**: Uses the HTML5 Canvas API for efficient and dynamic rendering of the radar display.
+1.  **モード選択**: 上部バーから`生成`、`指示`、`計測`のいずれかのモードを選択します。
+2.  **航空機の生成**: `生成`モードで、レーダー上をクリックします。右側のコントロールパネルにある「生成HDG」入力欄で初期針路を設定できます。
+3.  **指示の発行**: `指示`モードで、航空機をクリックして選択します。コントロールパネルのテンキーで針路を入力し、「指示」ボタンを押します。
+4.  **計測**: `計測`モードで、レーダー上をドラッグして距離と方位を計測します。
 
-## Development / 開発
+## 技術スタック
 
-### Setup
+このプロジェクトは、最新のシンプルなウェブ技術スタックで構築されています。
 
-Install the dependencies:
+-   **フロントエンド**: [React](https://react.dev/) と [TypeScript](https://www.typescriptlang.org/)
+-   **ビルドツール**: [Vite](https://vitejs.dev/)
+-   **状態管理**: Reactの組み込みフック (`useState`, `useContext`, `useReducer`) を使用し、すべてのアプリケーションロジックを一元化するカスタム `useRadarState` フックにカプセル化されています。
+-   **レンダリング**: HTML5 Canvas API を使用して、レーダー表示を効率的かつ動的にレンダリングします。
+
+## 開発
+
+### セットアップ
+
+依存関係をインストールします:
 ```bash
 npm install
 ```
 
-### Running the Development Server
+### 開発サーバーの実行
 
-To start the development server, run:
+開発サーバーを起動するには、以下を実行します:
 ```bash
 npm run dev
 ```
-This will open the application in your browser, typically at `http://localhost:5173`.
+これにより、通常 `http://localhost:5173` でブラウザにアプリケーションが開きます。
 
-### Building for Production
+### プロダクションビルド
 
-To create a production build, run:
+プロダクションビルドを作成するには、以下を実行します:
 ```bash
 npm run build
 ```
-The output files will be generated in the `dist` directory.
+出力ファイルは `dist` ディレクトリに生成されます。
 
-## Deployment / デプロイ
-
-This project is automatically deployed to GitHub Pages. The workflow is triggered on every push to the `main` branch where the commit message starts with `feat:` or `refactor:`.
+## デプロイ
 
 このプロジェクトはGitHub Pagesに自動的にデプロイされます。`main`ブランチへのプッシュのうち、コミットメッセージが `feat:` または `refactor:` で始まるものをトリガーとして、ワークフローが実行されます。
