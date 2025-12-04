@@ -34,17 +34,32 @@ export const TICK_SEC = 4
  * @param rNm - Radial distance in nautical miles.
  * @returns Speed in knots.
  */
+function linearInterpolate(x: number, x0: number, x1: number, y0: number, y1: number): number {
+	if (x > x0) return y0
+	if (x < x1) return y1
+	const a = (y0 - y1) / (x0 - x1)
+	return y1 + a * (x - x1)
+}
+
+/**
+ * Calculates speed during final approach based on distance.
+ * @param rNm - Radial distance in nautical miles.
+ * @returns Speed in knots.
+ */
 function calculateApproachSpeed(rNm: number): number {
+	if (rNm <= 8) {
+		// 8NM to 0NM: 170kt to 130kt
+		return linearInterpolate(rNm, 8, 0, 170, 130)
+	}
 	if (rNm <= 10) {
-		// Inside 10NM, reduce speed by 10kt per NM
-		return 210 - (10 - rNm) * 10
+		// 10NM to 8NM: 200kt to 170kt
+		return linearInterpolate(rNm, 10, 8, 200, 170)
 	}
-	if (rNm <= 15) {
-		// Inside 15NM (base of the rectangle)
-		return 220
+	if (rNm <= 16) {
+		// 16NM to 10NM: 220kt to 200kt
+		return linearInterpolate(rNm, 16, 10, 220, 200)
 	}
-	// Default speed when on approach but outside 15NM
-	return 230
+	return 220 // Outside 16NM on approach
 }
 
 /**
@@ -53,21 +68,48 @@ function calculateApproachSpeed(rNm: number): number {
  * @returns Speed in knots.
  */
 function calculateCurrentSpeed(ac: Aircraft): number {
-	// On final approach course (established on 360deg heading near the southern centerline)
+	// 1. Final Approach (Highest Priority)
+	const finalApproachCourse = 360
 	const isOnFinalCourse =
 		ac.isApproaching &&
-		Math.abs(shortestAngleDiffDeg(ac.headingDeg, 360)) < 5 &&
-		ac.bearingDeg > 170 &&
-		ac.bearingDeg < 190
+		(Math.abs(shortestAngleDiffDeg(ac.headingDeg, finalApproachCourse)) < 10 ||
+			ac.targetHeadingDeg === finalApproachCourse) &&
+		ac.bearingDeg > 160 &&
+		ac.bearingDeg < 200
 
 	if (isOnFinalCourse) {
 		return calculateApproachSpeed(ac.rNm)
 	}
 
-	// Default speed zones
-	if (ac.rNm > 50) return 300 // Outside 50NM
-	if (ac.rNm > 25) return 240 // Inside 50NM but outside 25NM
-	return 230 // Inside 25NM
+	// 2. Determine base speed by distance
+	let baseSpeed: number
+	if (ac.rNm > 50) {
+		baseSpeed = 300
+	} else if (ac.rNm > 40) {
+		baseSpeed = 280
+	} else if (ac.rNm > 30) {
+		baseSpeed = 270
+	} else if (ac.rNm > 20) {
+		baseSpeed = linearInterpolate(ac.rNm, 30, 20, 260, 240)
+	} else {
+		// Inside 20NM (not on final approach)
+		baseSpeed = 240
+	}
+
+	// 3. Apply overrides for the Baumkuchen sector
+	const isBaumkuchenSector = ac.bearingDeg >= 150 && ac.bearingDeg <= 210
+	if (isBaumkuchenSector) {
+		if (ac.rNm <= 20) {
+			// "North Line" override
+			return 220
+		}
+		if (ac.rNm <= 25) {
+			// "South Line" override: cap speed at 240kt
+			return Math.min(baseSpeed, 240)
+		}
+	}
+
+	return baseSpeed
 }
 
 export function advanceAircraft(ac: Aircraft): Aircraft {
